@@ -95,6 +95,26 @@
         .form-group input, .form-group select { width: 100%; }
         .delete-btn { background: #e53e3e; padding: 5px 10px; font-size: 12px; }
         .delete-btn:hover { background: #c53030; }
+        .payment-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .payment-row:last-child { border-bottom: none; }
+        .payment-check { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #cbd5e0; appearance: none; cursor: pointer; flex-shrink: 0; position: relative; transition: all 0.2s; background: white; }
+        .payment-check:checked { background: #48bb78; border-color: #48bb78; }
+        .payment-check:checked::after { content: '✓'; position: absolute; color: white; font-size: 15px; font-weight: bold; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+        .payment-label { font-weight: 700; color: #2d3748; min-width: 100px; font-size: 14px; }
+        .payment-input { padding: 7px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; }
+        .payment-input:focus { outline: none; border-color: #667eea; }
+        .payment-amount { width: 160px; }
+        .payment-date { width: 145px; }
+        .payment-status { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; }
+        .payment-status.received { background: #c6f6d5; color: #22543d; }
+        .payment-status.pending { background: #fed7d7; color: #742a2a; }
+        .payment-summary { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; padding-top: 16px; border-top: 2px solid #e2e8f0; }
+        .payment-summary-item { flex: 1; min-width: 140px; text-align: center; background: #f7fafc; border-radius: 10px; padding: 12px; }
+        .payment-summary-item .ps-amount { font-size: 20px; font-weight: 700; color: #667eea; }
+        .payment-summary-item .ps-label { font-size: 11px; color: #718096; margin-top: 3px; }
+        .payment-summary-item.green .ps-amount { color: #48bb78; }
+        .payment-summary-item.orange .ps-amount { color: #ed8936; }
+        .payment-summary-item.red .ps-amount { color: #e53e3e; }
         @media (max-width: 768px) { .container { padding: 15px; } .tab { padding: 8px 16px; font-size: 12px; } .data-table th, .data-table td { padding: 8px; font-size: 11px; } .budget-inputs { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -129,6 +149,10 @@
         <!-- Dashboard -->
         <div id="dashboard" class="panel active-panel">
             <div class="budget-summary" id="budgetSummary"></div>
+            <div class="card">
+                <div class="card-title">💳 Funding Received (Payment Tranches)</div>
+                <div id="paymentsCard"></div>
+            </div>
             <div class="component-budget-grid" id="componentBudgetGrid"></div>
             <div class="stats-grid" id="statsGrid"></div>
             <div class="progress-section" id="progressSection"></div>
@@ -548,10 +572,24 @@
             setupBudgetListeners();
         }
 
-        // Ensure older projects get a budget field
+        // Ensure older projects get a budget + payments field
         function ensureBudget(p) {
             if (!p.budget) p.budget = { ...DEFAULT_BUDGET };
+            if (!p.payments) p.payments = makeDefaultPayments();
             return p;
+        }
+
+        function makeDefaultPayments() {
+            return [
+                { id: 1, label: '1st Tranche', received: false, amount: '', date: '' },
+                { id: 2, label: '2nd Tranche', received: false, amount: '', date: '' },
+                { id: 3, label: '3rd Tranche', received: false, amount: '', date: '' }
+            ];
+        }
+
+        function getTotalReceived() {
+            const project = getCurrentProject();
+            return (project.payments || []).filter(p => p.received).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
         }
 
         function createDefaultProjects() {
@@ -568,6 +606,7 @@
                 version: Date.now(),
                 createdAt: new Date().toISOString(),
                 budget: budget ? { ...budget } : { ...DEFAULT_BUDGET },
+                payments: makeDefaultPayments(),
                 tasks: {
                     water: TASK_TEMPLATES.water.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
                     toilet: TASK_TEMPLATES.toilet.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
@@ -601,6 +640,77 @@
             toast.textContent = message;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ============ PAYMENT TRANCHES ============
+        function refreshPayments() {
+            const project = getCurrentProject();
+            if (!project) return;
+            const payments = project.payments || makeDefaultPayments();
+            const grandTotal = calcBudgetTotal(project.budget);
+            const totalReceived = getTotalReceived();
+            const expSummary = getExpenditureSummary();
+            const balance = totalReceived - expSummary.totalSpent;
+
+            const rows = payments.map(p => `
+                <div class="payment-row">
+                    <input type="checkbox" class="payment-check" ${p.received ? 'checked' : ''}
+                        onchange="togglePayment(${p.id}, this.checked)" id="pchk${p.id}">
+                    <label class="payment-label" for="pchk${p.id}">${p.label}</label>
+                    <input type="number" class="payment-input payment-amount"
+                        placeholder="Amount (₦)" value="${p.amount}"
+                        onchange="savePaymentField(${p.id}, 'amount', this.value)"
+                        ${p.received ? '' : 'disabled'}>
+                    <input type="date" class="payment-input payment-date"
+                        value="${p.date}"
+                        onchange="savePaymentField(${p.id}, 'date', this.value)"
+                        ${p.received ? '' : 'disabled'}>
+                    <span class="payment-status ${p.received ? 'received' : 'pending'}">
+                        ${p.received ? '✅ Received' : '⏳ Pending'}
+                    </span>
+                    ${p.received && p.amount ? `<strong style="margin-left:auto;color:#2d3748">₦${parseFloat(p.amount).toLocaleString()}</strong>` : ''}
+                </div>
+            `).join('');
+
+            const outstanding = grandTotal - totalReceived;
+            document.getElementById('paymentsCard').innerHTML = rows + `
+                <div class="payment-summary">
+                    <div class="payment-summary-item green">
+                        <div class="ps-amount">₦${totalReceived.toLocaleString()}</div>
+                        <div class="ps-label">Total Received</div>
+                    </div>
+                    <div class="payment-summary-item ${outstanding > 0 ? 'orange' : 'green'}">
+                        <div class="ps-amount">₦${Math.abs(outstanding).toLocaleString()}</div>
+                        <div class="ps-label">${outstanding > 0 ? 'Still Outstanding' : 'Fully Funded'}</div>
+                    </div>
+                    <div class="payment-summary-item ${balance < 0 ? 'red' : 'green'}">
+                        <div class="ps-amount">₦${Math.abs(balance).toLocaleString()}</div>
+                        <div class="ps-label">${balance < 0 ? '⚠️ Overspent vs Received' : 'Cash Balance'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function togglePayment(id, checked) {
+            const project = getCurrentProject();
+            const payment = project.payments.find(p => p.id === id);
+            if (!payment) return;
+            payment.received = checked;
+            if (!checked) { payment.amount = ''; payment.date = ''; }
+            saveCurrentProject(project);
+            refreshPayments();
+            refreshDashboard();
+            showToast(checked ? `✅ ${payment.label} marked as received` : `${payment.label} unmarked`);
+        }
+
+        function savePaymentField(id, field, value) {
+            const project = getCurrentProject();
+            const payment = project.payments.find(p => p.id === id);
+            if (!payment) return;
+            payment[field] = value;
+            saveCurrentProject(project);
+            refreshPayments();
+            refreshDashboard();
         }
 
         // ============ PARTIAL PAYMENT TOGGLE ============
@@ -815,6 +925,7 @@
         // ============ REFRESH UI ============
         function refreshAll() {
             refreshDashboard();
+            refreshPayments();
             const project = getCurrentProject();
             if (!project) return;
             const b = project.budget;
@@ -853,11 +964,13 @@
             const remaining = grandTotal - expSummary.totalSpent;
             const isOverBudget = remaining < 0;
 
+            const totalReceived = getTotalReceived();
+            const cashBalance = totalReceived - expSummary.totalSpent;
             document.getElementById('budgetSummary').innerHTML = `
                 <div class="budget-card"><h4>💰 Grand Total Budget</h4><div class="amount">₦${grandTotal.toLocaleString()}</div><div class="sub">${Object.keys(b).length} components</div></div>
-                <div class="budget-card green"><h4>💸 Actually Paid Out</h4><div class="amount">₦${expSummary.totalSpent.toLocaleString()}</div><div class="sub">${Math.round((expSummary.totalSpent / grandTotal) * 100)}% of budget</div></div>
-                <div class="budget-card ${isOverBudget ? 'red' : 'orange'}"><h4>📊 ${isOverBudget ? '⚠️ Over Budget' : 'Remaining'}</h4><div class="amount">₦${Math.abs(remaining).toLocaleString()}</div><div class="sub">${isOverBudget ? 'Exceeded by this amount' : 'left to spend'}</div></div>
-                <div class="budget-card"><h4>📈 Overall Progress</h4><div class="amount">${Math.round(overallPercent)}%</div><div class="sub">${totalComplete}/${totalTasks} tasks done</div></div>
+                <div class="budget-card green"><h4>🏦 Funding Received</h4><div class="amount">₦${totalReceived.toLocaleString()}</div><div class="sub">${Math.round((totalReceived / grandTotal) * 100)}% of budget</div></div>
+                <div class="budget-card ${isOverBudget ? 'red' : 'orange'}"><h4>💸 Spent vs Budget</h4><div class="amount">₦${expSummary.totalSpent.toLocaleString()}</div><div class="sub">${isOverBudget ? '⚠️ Over budget' : '₦' + Math.abs(remaining).toLocaleString() + ' left'}</div></div>
+                <div class="budget-card ${cashBalance < 0 ? 'red' : 'green'}"><h4>${cashBalance < 0 ? '⚠️ Cash Deficit' : '💵 Cash Balance'}</h4><div class="amount">₦${Math.abs(cashBalance).toLocaleString()}</div><div class="sub">${cashBalance < 0 ? 'Overspent vs received' : 'Received minus spent'}</div></div>
             `;
 
             // Component budget cards
@@ -1007,8 +1120,16 @@
                 return `<tr><td>${name}</td><td style="text-align:right">₦${budget.toLocaleString()}</td><td style="text-align:right">₦${s.toLocaleString()}</td><td style="text-align:right;color:${rem<0?'red':'green'}">₦${Math.abs(rem).toLocaleString()} ${rem<0?'OVER':'left'}</td></tr>`;
             }).join('');
 
+            const totalReceived = getTotalReceived();
+            const paymentRows = (project.payments || []).map(p =>
+                `<tr><td>${p.label}</td><td style="text-align:center">${p.received ? '✅ Yes' : '⏳ No'}</td><td style="text-align:right">${p.received && p.amount ? '₦' + parseFloat(p.amount).toLocaleString() : '-'}</td><td>${p.date || '-'}</td></tr>`
+            ).join('');
             document.getElementById('reportContent').innerHTML = `
                 <div class="report-header"><h2>💰 FINANCIAL REPORT</h2><h3>${project.name}</h3><p>Generated: ${new Date().toLocaleString()}</p></div>
+                <div class="report-section"><h3>Funding Received</h3>
+                    <table style="width:100%"><tr><th>Tranche</th><th>Received?</th><th>Amount</th><th>Date</th></tr>${paymentRows}</table>
+                    <p style="margin-top:10px"><strong>Total Received: ₦${totalReceived.toLocaleString()}</strong></p>
+                </div>
                 <div class="report-section"><h3>Overall</h3>
                     <table style="width:100%">
                         <tr><td><strong>Grand Total Budget:</strong></td><td style="text-align:right">₦${grandTotal.toLocaleString()}</td></tr>
