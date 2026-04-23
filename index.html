@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGILE Project Management - Complete System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); min-height: 100vh; color: #333; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 30px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header .subtitle { opacity: 0.9; font-size: 14px; }
+        .sync-indicator { font-size: 12px; opacity: 0.8; margin-top: 5px; }
+        .project-selector { background: rgba(255,255,255,0.15); border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+        .project-selector label { color: white; font-weight: 600; }
+        .project-selector select { padding: 10px 20px; border-radius: 8px; border: none; font-size: 14px; min-width: 200px; background: white; cursor: pointer; }
+        .add-project-btn { background: #48bb78; padding: 10px 20px; border-radius: 8px; border: none; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .add-project-btn:hover { background: #38a169; transform: translateY(-2px); }
+        .delete-project-btn { background: #e53e3e; padding: 10px 20px; border-radius: 8px; border: none; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .delete-project-btn:hover { background: #c53030; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 25px; flex-wrap: wrap; }
+        .tab { padding: 12px 24px; background: rgba(255,255,255,0.1); border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; color: white; }
+        .tab:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); }
+        .tab.active { background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .panel { display: none; animation: fadeIn 0.3s ease; }
+        .panel.active-panel { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .card-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #2d3748; border-left: 4px solid #667eea; padding-left: 15px; }
+        .progress-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .progress-card { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%); border-radius: 12px; padding: 20px; text-align: center; }
+        .progress-card h4 { margin-bottom: 12px; color: #2d3748; }
+        .progress-bar-container { background: #e2e8f0; border-radius: 25px; height: 30px; overflow: hidden; margin-bottom: 10px; }
+        .progress-fill { background: linear-gradient(90deg, #48bb78, #38a169); height: 100%; border-radius: 25px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px; transition: width 0.3s ease; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-number { font-size: 28px; font-weight: 700; color: #667eea; }
+        .stat-label { color: #718096; font-size: 13px; margin-top: 5px; }
+        .budget-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .budget-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; padding: 20px; text-align: center; }
+        .budget-card h4 { font-size: 14px; opacity: 0.9; margin-bottom: 10px; }
+        .budget-card .amount { font-size: 28px; font-weight: bold; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .data-table th { background: #f7fafc; font-weight: 600; color: #2d3748; }
+        .data-table tr:hover { background: #f7fafc; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-completed { background: #c6f6d5; color: #22543d; }
+        .status-progress { background: #feebc8; color: #7b341e; }
+        .status-pending { background: #fed7d7; color: #742a2a; }
+        .status-paid { background: #c6f6d5; color: #22543d; }
+        .status-partial { background: #feebc8; color: #7b341e; }
+        select, input, textarea { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; }
+        select { width: auto; min-width: 120px; }
+        button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .action-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; }
+        .report-container { background: #fefefe; border-radius: 12px; padding: 30px; font-family: 'Times New Roman', serif; max-height: 600px; overflow-y: auto; }
+        .report-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2d3748; padding-bottom: 20px; }
+        .report-section { margin-bottom: 25px; }
+        .report-section h3 { color: #2d3748; margin-bottom: 15px; border-left: 4px solid #667eea; padding-left: 12px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #48bb78; color: white; padding: 12px 20px; border-radius: 8px; z-index: 1000; animation: slideIn 0.3s ease; }
+        .toast.error { background: #e53e3e; }
+        .toast.info { background: #667eea; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 150px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 13px; color: #4a5568; }
+        .form-group input, .form-group select { width: 100%; }
+        .delete-btn { background: #e53e3e; padding: 5px 10px; font-size: 12px; }
+        .delete-btn:hover { background: #c53030; }
+        @media (max-width: 768px) { .container { padding: 15px; } .tab { padding: 8px 16px; font-size: 12px; } .data-table th, .data-table td { padding: 8px; font-size: 11px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏫 AGILE Project Management System</h1>
+            <div class="subtitle">Adolescent Girls Initiative for Learning and Empowerment | World Bank Sponsored</div>
+            <div class="sync-indicator" id="syncIndicator">⚡ Initialising...</div>
+        </div>
+
+        <div class="project-selector">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <label>📍 Select Project:</label>
+                <select id="projectSelect" onchange="switchProject()"></select>
+                <button class="add-project-btn" onclick="showAddProjectModal()">➕ New Project</button>
+            </div>
+            <button class="delete-project-btn" onclick="deleteCurrentProject()">🗑 Delete Project</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showPanel('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="showPanel('expenditure')">💰 Expenditure</button>
+            <button class="tab" onclick="showPanel('water')">💧 Water System</button>
+            <button class="tab" onclick="showPanel('toilet')">🚽 Toilet Facilities</button>
+            <button class="tab" onclick="showPanel('renovation')">🏗️ Classroom Reno</button>
+            <button class="tab" onclick="showPanel('furniture')">🪑 Furniture</button>
+            <button class="tab" onclick="showPanel('reports')">📄 Reports</button>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="panel active-panel">
+            <div class="budget-summary" id="budgetSummary"></div>
+            <div class="stats-grid" id="statsGrid"></div>
+            <div class="progress-section" id="progressSection"></div>
+            <div class="card">
+                <div class="card-title">📋 Recent Expenditures</div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount (₦)</th><th>Paid (₦)</th><th>Status</th></tr></thead>
+                        <tbody id="recentExpenditures"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 Activity Log</div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th>Date</th><th>Component</th><th>Activity</th><th>Status</th></tr></thead>
+                        <tbody id="activityLog"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expenditure Panel -->
+        <div id="expenditure" class="panel">
+            <div class="card">
+                <div class="card-title">💰 Budget Summary</div>
+                <div class="budget-summary" id="expenditureSummary"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">➕ Add New Expenditure</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Date</label><input type="date" id="expDate"></div>
+                    <div class="form-group"><label>Description</label><input type="text" id="expDesc" placeholder="e.g., Cement purchase - 50 bags"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Category</label>
+                        <select id="expCategory">
+                            <option value="Water System">💧 Water System</option>
+                            <option value="Toilet Facilities">🚽 Toilet Facilities</option>
+                            <option value="Classroom Renovation">🏗️ Classroom Renovation</option>
+                            <option value="Furniture">🪑 Furniture</option>
+                            <option value="Labour">👷 Labour</option>
+                            <option value="Transport">🚚 Transport</option>
+                            <option value="Materials">📦 Materials</option>
+                            <option value="Other">📋 Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Total Amount (₦)</label><input type="number" id="expAmount" placeholder="0"></div>
+                    <div class="form-group"><label>Status</label>
+                        <select id="expStatus" onchange="togglePaidAmount(this.value)">
+                            <option value="paid">✅ Paid</option>
+                            <option value="partial">🔄 Partial</option>
+                            <option value="pending">⏳ Pending</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="paidAmountGroup" style="display:none">
+                        <label>Amount Actually Paid (₦)</label>
+                        <input type="number" id="expPaidAmount" placeholder="e.g., 40000">
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="addExpenditure()">➕ Add Expenditure</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 All Expenditures</div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount (₦)</th><th>Paid (₦)</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="allExpenditures"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Panel -->
+        <div id="water" class="panel">
+            <div class="card">
+                <div class="card-title">💧 Borehole & Solar Water System</div>
+                <div id="waterProgress"></div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th style="width:40%">Task</th><th style="width:20%">Status</th><th style="width:20%">Completion Date</th><th style="width:30%">Notes</th></tr></thead>
+                        <tbody id="waterTasks"></tbody>
+                    </table>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="markComplete('water')">✅ Mark All Water Tasks Complete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toilet Panel -->
+        <div id="toilet" class="panel">
+            <div class="card">
+                <div class="card-title">🚽 WASH Facilities (4-Cubicle Toilets x 2 Units)</div>
+                <div id="toiletProgress"></div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th style="width:40%">Task</th><th style="width:20%">Status</th><th style="width:20%">Completion Date</th><th style="width:30%">Notes</th></tr></thead>
+                        <tbody id="toiletTasks"></tbody>
+                    </table>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="markComplete('toilet')">✅ Mark All Toilet Tasks Complete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Renovation Panel -->
+        <div id="renovation" class="panel">
+            <div class="card">
+                <div class="card-title">🏗️ Classroom Renovation (4-Classroom Block)</div>
+                <div id="renoProgress"></div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th style="width:40%">Task</th><th style="width:20%">Status</th><th style="width:20%">Completion Date</th><th style="width:30%">Notes</th></tr></thead>
+                        <tbody id="renoTasks"></tbody>
+                    </table>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="markComplete('renovation')">✅ Mark All Renovation Tasks Complete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Furniture Panel -->
+        <div id="furniture" class="panel">
+            <div class="card">
+                <div class="card-title">🪑 Furniture & Learning Materials</div>
+                <div id="furnitureProgress"></div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead><tr><th style="width:35%">Item</th><th style="width:15%">Quantity</th><th style="width:20%">Status</th><th style="width:30%">Completion Date</th></tr></thead>
+                        <tbody id="furnitureTasks"></tbody>
+                    </table>
+                </div>
+                <div class="action-buttons">
+                    <button onclick="markComplete('furniture')">✅ Mark All Furniture Complete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Panel -->
+        <div id="reports" class="panel">
+            <div class="card">
+                <div class="card-title">📄 Generate Project Reports</div>
+                <div class="action-buttons">
+                    <button onclick="generateProgressReport()">📊 Progress Report</button>
+                    <button onclick="generateFinancialReport()">💰 Financial Report</button>
+                    <button onclick="generateFinalReport()">🏁 Final Report</button>
+                    <button onclick="exportAllData()">💾 Export JSON</button>
+                    <button onclick="exportToCSV()">📎 Export CSV</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📋 Report Preview</div>
+                <div id="reportContent" class="report-container">
+                    <p style="color: #718096; text-align: center;">Select a report type above to generate...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div id="addProjectModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px">➕ Add New Project</h3>
+            <input type="text" id="newProjectName" placeholder="e.g., Tungan Kawo, Maile, Takunti, Egba" style="width: 100%; margin-bottom: 15px; padding: 10px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end">
+                <button onclick="addProject()">Create Project</button>
+                <button onclick="closeModal()" style="background: #718096;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ CONSTANTS ============
+        const TOTAL_BUDGET = 17700000;
+
+        const TASK_TEMPLATES = {
+            water: [
+                "Geophysical Survey & Borehole Drilling",
+                "Install Casing & Riser Pipes",
+                "Solar Submersible Pump Installation",
+                "Solar Panel Cells (6 units)",
+                "Inverter System & Batteries",
+                "Control Panel & Circuit Breaker",
+                "Overhead Tank (2500 Litres x 2)",
+                "Steel Tank Stanchion Fabrication",
+                "Fetch Point Construction",
+                "Pipework & Water Distribution"
+            ],
+            toilet: [
+                "Site Clearance & Setting Out",
+                "Foundation Excavation & Trenching",
+                "Concrete Footing & Blinding",
+                "Block Work (DPC to Lintel)",
+                "Reinforced Concrete Lintels",
+                "Roof Carcass (Treated Wood)",
+                "Roof Covering (Longspan Aluminium)",
+                "Wall Plastering (Internal & External)",
+                "Floor Screeding & Tiling",
+                "Wall Tiling (Wet Areas)",
+                "Metal Door Installation",
+                "Plumbing & Sanitary Fittings",
+                "Painting & Finishing",
+                "Soakaway & Drainage",
+                "Final Cleaning & Handover"
+            ],
+            renovation: [
+                "Remove Damaged Roofing Sheets",
+                "Remove Old Doors & Windows",
+                "Hack Existing Rendering",
+                "Scrape Old Paint",
+                "New Roof Trusses & Carcass",
+                "New Longspan Roof Sheets",
+                "New Metal Windows (13 units)",
+                "New Metal Doors (4 units - Chaka Plate)",
+                "Ceiling Installation (Hardboard)",
+                "In-situ Terrazzo Flooring",
+                "Wall Plastering (Internal/External)",
+                "Emulsion Painting",
+                "Gloss Painting (Doors/Windows)",
+                "Electrical Works"
+            ],
+            furniture: [
+                { name: "Students Desk (3-seater)", qty: 75 },
+                { name: "Office Table", qty: 4 },
+                { name: "Office Chair", qty: 4 },
+                { name: "White Board (1.2 x 2.4m)", qty: 4 },
+                { name: "Learning Materials Package", qty: 1 },
+                { name: "First Aid Box", qty: 1 },
+                { name: "Sports Facilities", qty: 1 }
+            ]
+        };
+
+        // ============ STATE ============
+        let projects = [];
+        let currentProjectId = null;
+        let useDB = false;
+        let saveTimer = null;
+
+        // ============ SYNC INDICATOR ============
+        function setSync(msg) {
+            document.getElementById('syncIndicator').textContent = msg;
+        }
+
+        // ============ DB API ============
+        async function loadFromDB() {
+            const res = await fetch('/api/projects');
+            if (!res.ok) throw new Error('DB unavailable');
+            const data = await res.json();
+            return data;
+        }
+
+        async function saveToDB(project) {
+            const res = await fetch('/api/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(project)
+            });
+            if (!res.ok) throw new Error('Save failed');
+        }
+
+        async function deleteFromDB(id) {
+            await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        }
+
+        function autoSave(project) {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(async () => {
+                saveLocalStorage();
+                if (!useDB) return;
+                try {
+                    setSync('💾 Saving...');
+                    await saveToDB(project);
+                    setSync('✅ Saved to cloud');
+                    setTimeout(() => setSync('☁️ Cloud sync active'), 2000);
+                } catch {
+                    setSync('⚠️ Cloud save failed — data saved locally');
+                }
+            }, 1000);
+        }
+
+        // ============ LOCAL STORAGE ============
+        function saveLocalStorage() {
+            localStorage.setItem('agile_projects', JSON.stringify(projects));
+            localStorage.setItem('agile_current_project', currentProjectId);
+        }
+
+        function loadLocalStorage() {
+            const saved = localStorage.getItem('agile_projects');
+            if (saved) projects = JSON.parse(saved);
+            currentProjectId = localStorage.getItem('agile_current_project');
+        }
+
+        // ============ INIT ============
+        async function initApp() {
+            setSync('⚡ Connecting to cloud...');
+            try {
+                const dbProjects = await loadFromDB();
+                if (dbProjects.length > 0) {
+                    projects = dbProjects;
+                    currentProjectId = localStorage.getItem('agile_current_project');
+                    if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
+                        currentProjectId = projects[0].id;
+                    }
+                    useDB = true;
+                    setSync('☁️ Cloud sync active');
+                } else {
+                    // DB is live but empty — migrate from localStorage
+                    loadLocalStorage();
+                    if (projects.length === 0) createDefaultProjects();
+                    useDB = true;
+                    setSync('☁️ Migrating to cloud...');
+                    for (const p of projects) await saveToDB(p).catch(() => {});
+                    setSync('☁️ Cloud sync active');
+                }
+            } catch {
+                // DB unreachable — fall back to localStorage
+                loadLocalStorage();
+                if (projects.length === 0) createDefaultProjects();
+                useDB = false;
+                setSync('💾 Offline mode — localStorage only');
+            }
+            if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
+                currentProjectId = projects[0].id;
+            }
+            updateProjectSelect();
+            refreshAll();
+            document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        function createDefaultProjects() {
+            const defaultNames = ['Tungan Kawo', 'Maile', 'Takunti', 'Egba'];
+            projects = defaultNames.map((name, idx) => ({
+                id: 'proj_' + (idx + 1) + '_' + Date.now(),
+                name,
+                version: Date.now(),
+                createdAt: new Date().toISOString(),
+                tasks: {
+                    water: TASK_TEMPLATES.water.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
+                    toilet: TASK_TEMPLATES.toilet.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
+                    renovation: TASK_TEMPLATES.renovation.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
+                    furniture: TASK_TEMPLATES.furniture.map((item, i) => ({ id: i + 1, name: item.name, qty: item.qty, status: 'pending', completedDate: null }))
+                },
+                expenditures: [],
+                activityLog: []
+            }));
+            currentProjectId = projects[0].id;
+            saveLocalStorage();
+        }
+
+        function getCurrentProject() {
+            return projects.find(p => p.id === currentProjectId);
+        }
+
+        function saveCurrentProject(updatedProject) {
+            updatedProject.version = Date.now();
+            const index = projects.findIndex(p => p.id === currentProjectId);
+            if (index !== -1) {
+                projects[index] = updatedProject;
+                autoSave(updatedProject);
+            }
+        }
+
+        function addActivity(component, activity, status) {
+            const project = getCurrentProject();
+            if (!project) return;
+            project.activityLog.unshift({
+                date: new Date().toLocaleString(),
+                component,
+                activity,
+                status
+            });
+            if (project.activityLog.length > 50) project.activityLog.pop();
+            saveCurrentProject(project);
+        }
+
+        function showToast(message, type = '') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ============ PARTIAL PAYMENT TOGGLE ============
+        function togglePaidAmount(status) {
+            document.getElementById('paidAmountGroup').style.display = status === 'partial' ? '' : 'none';
+            if (status !== 'partial') document.getElementById('expPaidAmount').value = '';
+        }
+
+        // ============ TASK FUNCTIONS ============
+        function updateTaskStatus(component, taskId, status) {
+            const project = getCurrentProject();
+            const task = project.tasks[component].find(t => t.id === taskId);
+            if (task && task.status !== status) {
+                task.status = status;
+                task.completedDate = status === 'completed' ? new Date().toLocaleDateString() : null;
+                if (status === 'completed') {
+                    addActivity(component, task.name, 'Completed');
+                    showToast(`✓ ${task.name.substring(0, 40)} completed!`);
+                }
+                saveCurrentProject(project);
+                refreshDashboard();
+                refreshComponent(component, component + 'Tasks', component === 'furniture');
+                document.getElementById(component + 'Progress').innerHTML = makeProgressBar(getProgress(component).percent);
+            }
+        }
+
+        function updateTaskNote(component, taskId, note) {
+            const project = getCurrentProject();
+            const task = project.tasks[component].find(t => t.id === taskId);
+            if (task) {
+                task.notes = note;
+                saveCurrentProject(project);
+            }
+        }
+
+        function markComplete(component) {
+            const project = getCurrentProject();
+            let completedCount = 0;
+            for (const task of project.tasks[component]) {
+                if (task.status !== 'completed') {
+                    task.status = 'completed';
+                    task.completedDate = new Date().toLocaleDateString();
+                    addActivity(component, task.name, 'Completed');
+                    completedCount++;
+                }
+            }
+            saveCurrentProject(project);
+            showToast(`✅ ${component}: ${completedCount} tasks completed!`);
+            refreshAll();
+        }
+
+        function getProgress(component) {
+            const project = getCurrentProject();
+            const tasks = project.tasks[component];
+            const completed = tasks.filter(t => t.status === 'completed').length;
+            return { completed, total: tasks.length, percent: (completed / tasks.length) * 100 };
+        }
+
+        function makeProgressBar(percent) {
+            return `<div class="progress-bar-container"><div class="progress-fill" style="width:${percent}%">${Math.round(percent)}%</div></div>`;
+        }
+
+        // ============ EXPENDITURE FUNCTIONS ============
+        function getEffectivePaid(exp) {
+            if (exp.status === 'paid') return exp.amount;
+            if (exp.status === 'partial') return exp.paidAmount || 0;
+            return 0;
+        }
+
+        function getExpenditureSummary() {
+            const project = getCurrentProject();
+            const totalSpent = project.expenditures.reduce((sum, exp) => sum + getEffectivePaid(exp), 0);
+            const byCategory = {};
+            for (const exp of project.expenditures) {
+                if (!byCategory[exp.category]) byCategory[exp.category] = 0;
+                byCategory[exp.category] += getEffectivePaid(exp);
+            }
+            return { totalSpent, byCategory };
+        }
+
+        function addExpenditure() {
+            const date = document.getElementById('expDate').value;
+            const description = document.getElementById('expDesc').value.trim();
+            const category = document.getElementById('expCategory').value;
+            const amount = parseFloat(document.getElementById('expAmount').value);
+            const status = document.getElementById('expStatus').value;
+            const paidAmountRaw = document.getElementById('expPaidAmount').value;
+            const paidAmount = paidAmountRaw ? parseFloat(paidAmountRaw) : null;
+
+            if (!date || !description || !amount || amount <= 0) {
+                showToast('Please fill all fields correctly', 'error');
+                return;
+            }
+            if (status === 'partial' && (!paidAmount || paidAmount <= 0 || paidAmount > amount)) {
+                showToast('Enter a valid paid amount (less than total)', 'error');
+                return;
+            }
+
+            const project = getCurrentProject();
+            const newExp = {
+                id: Date.now(),
+                date,
+                description,
+                category,
+                amount,
+                paidAmount: status === 'partial' ? paidAmount : (status === 'paid' ? amount : 0),
+                status,
+                createdAt: new Date().toISOString()
+            };
+            project.expenditures.push(newExp);
+            saveCurrentProject(project);
+            addActivity('Finance', `Added: ${description} (₦${amount.toLocaleString()})`, 'Recorded');
+
+            document.getElementById('expDesc').value = '';
+            document.getElementById('expAmount').value = '';
+            document.getElementById('expPaidAmount').value = '';
+            document.getElementById('expStatus').value = 'paid';
+            togglePaidAmount('paid');
+
+            showToast(`💰 Added: ${description.substring(0, 30)} — ₦${amount.toLocaleString()}`);
+            refreshAll();
+        }
+
+        function deleteExpenditure(expId) {
+            if (!confirm('Delete this expenditure?')) return;
+            const project = getCurrentProject();
+            project.expenditures = project.expenditures.filter(e => e.id !== expId);
+            saveCurrentProject(project);
+            addActivity('Finance', 'Deleted expenditure record', 'Deleted');
+            showToast('Expenditure deleted');
+            refreshAll();
+        }
+
+        // ============ REFRESH UI ============
+        function refreshAll() {
+            refreshDashboard();
+            const comps = ['water', 'toilet', 'renovation', 'furniture'];
+            comps.forEach(c => {
+                const p = getProgress(c);
+                const el = document.getElementById(c + 'Progress');
+                if (el) el.innerHTML = makeProgressBar(p.percent);
+            });
+            refreshComponent('water', 'waterTasks', false);
+            refreshComponent('toilet', 'toiletTasks', false);
+            refreshComponent('renovation', 'renoTasks', false);
+            refreshComponent('furniture', 'furnitureTasks', true);
+            refreshExpenditures();
+        }
+
+        function refreshDashboard() {
+            const project = getCurrentProject();
+            if (!project) return;
+
+            const water = getProgress('water');
+            const toilet = getProgress('toilet');
+            const reno = getProgress('renovation');
+            const furniture = getProgress('furniture');
+            const expSummary = getExpenditureSummary();
+            const totalComplete = water.completed + toilet.completed + reno.completed + furniture.completed;
+            const totalTasks = water.total + toilet.total + reno.total + furniture.total;
+            const overallPercent = totalTasks > 0 ? (totalComplete / totalTasks) * 100 : 0;
+            const remainingBudget = TOTAL_BUDGET - expSummary.totalSpent;
+
+            document.getElementById('budgetSummary').innerHTML = `
+                <div class="budget-card"><h4>💰 Total Budget</h4><div class="amount">₦${TOTAL_BUDGET.toLocaleString()}</div></div>
+                <div class="budget-card"><h4>💸 Actually Paid</h4><div class="amount">₦${expSummary.totalSpent.toLocaleString()}</div></div>
+                <div class="budget-card"><h4>📊 Remaining</h4><div class="amount" style="${remainingBudget < 0 ? 'color:#ffcccc' : ''}">₦${remainingBudget.toLocaleString()}</div></div>
+                <div class="budget-card"><h4>📈 Spent %</h4><div class="amount">${Math.round((expSummary.totalSpent / TOTAL_BUDGET) * 100)}%</div></div>
+            `;
+
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card" onclick="showPanel('water')"><div class="stat-number">${water.completed}/${water.total}</div><div class="stat-label">💧 Water System</div></div>
+                <div class="stat-card" onclick="showPanel('toilet')"><div class="stat-number">${toilet.completed}/${toilet.total}</div><div class="stat-label">🚽 Toilet</div></div>
+                <div class="stat-card" onclick="showPanel('renovation')"><div class="stat-number">${reno.completed}/${reno.total}</div><div class="stat-label">🏗️ Renovation</div></div>
+                <div class="stat-card" onclick="showPanel('furniture')"><div class="stat-number">${furniture.completed}/${furniture.total}</div><div class="stat-label">🪑 Furniture</div></div>
+                <div class="stat-card"><div class="stat-number">${Math.round(overallPercent)}%</div><div class="stat-label">Overall Progress</div></div>
+            `;
+
+            document.getElementById('progressSection').innerHTML = `
+                <div class="progress-card"><h4>💧 Water System</h4>${makeProgressBar(water.percent)}</div>
+                <div class="progress-card"><h4>🚽 Toilet Facilities</h4>${makeProgressBar(toilet.percent)}</div>
+                <div class="progress-card"><h4>🏗️ Classroom Renovation</h4>${makeProgressBar(reno.percent)}</div>
+                <div class="progress-card"><h4>🪑 Furniture</h4>${makeProgressBar(furniture.percent)}</div>
+            `;
+
+            const recentExps = project.expenditures.slice(0, 10);
+            document.getElementById('recentExpenditures').innerHTML = recentExps.length > 0
+                ? recentExps.map(exp => `
+                    <tr>
+                        <td>${exp.date}</td>
+                        <td>${exp.description.substring(0, 50)}${exp.description.length > 50 ? '...' : ''}</td>
+                        <td>${exp.category}</td>
+                        <td style="font-weight:bold">₦${exp.amount.toLocaleString()}</td>
+                        <td style="font-weight:bold;color:#48bb78">₦${getEffectivePaid(exp).toLocaleString()}</td>
+                        <td><span class="status-badge status-${exp.status}">${exp.status === 'paid' ? '✅ Paid' : exp.status === 'partial' ? '🔄 Partial' : '⏳ Pending'}</span></td>
+                    </tr>`).join('')
+                : '<tr><td colspan="6" style="text-align:center">No expenditures recorded</td></tr>';
+
+            document.getElementById('activityLog').innerHTML = project.activityLog.slice(0, 10).map(log =>
+                `<tr><td>${log.date}</td><td>${log.component}</td><td>${log.activity}</td><td><span class="status-badge status-completed">${log.status}</span></td></tr>`
+            ).join('') || '<tr><td colspan="4" style="text-align:center">No activity logged yet</td></tr>';
+        }
+
+        function refreshComponent(component, containerId, isFurniture) {
+            const project = getCurrentProject();
+            const tasks = project.tasks[component];
+            document.getElementById(containerId).innerHTML = tasks.map(task => `
+                <tr>
+                    <td>${task.name}</td>
+                    ${isFurniture ? `<td>${task.qty || 1}</td>` : ''}
+                    <td>
+                        <select onchange="updateTaskStatus('${component}', ${task.id}, this.value)" style="width:120px">
+                            <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>⏳ Pending</option>
+                            <option value="progress" ${task.status === 'progress' ? 'selected' : ''}>🔄 In Progress</option>
+                            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Completed</option>
+                        </select>
+                    </td>
+                    <td>${task.completedDate || '-'}</td>
+                    ${!isFurniture ? `<td><input type="text" placeholder="Add notes..." value="${task.notes || ''}" style="width:100%" onchange="updateTaskNote('${component}', ${task.id}, this.value)"></td>` : ''}
+                </tr>
+            `).join('');
+        }
+
+        function refreshExpenditures() {
+            const project = getCurrentProject();
+            const expSummary = getExpenditureSummary();
+
+            document.getElementById('expenditureSummary').innerHTML = `
+                <div class="budget-card"><h4>💰 Total Budget</h4><div class="amount">₦${TOTAL_BUDGET.toLocaleString()}</div></div>
+                <div class="budget-card"><h4>💸 Actually Paid</h4><div class="amount">₦${expSummary.totalSpent.toLocaleString()}</div></div>
+                <div class="budget-card"><h4>📊 Remaining</h4><div class="amount">₦${(TOTAL_BUDGET - expSummary.totalSpent).toLocaleString()}</div></div>
+            `;
+
+            document.getElementById('allExpenditures').innerHTML = project.expenditures.length > 0
+                ? project.expenditures.map(exp => `
+                    <tr>
+                        <td>${exp.date}</td>
+                        <td>${exp.description}</td>
+                        <td>${exp.category}</td>
+                        <td style="font-weight:bold">₦${exp.amount.toLocaleString()}</td>
+                        <td style="font-weight:bold;color:#48bb78">₦${getEffectivePaid(exp).toLocaleString()}</td>
+                        <td><span class="status-badge status-${exp.status}">${exp.status === 'paid' ? '✅ Paid' : exp.status === 'partial' ? '🔄 Partial' : '⏳ Pending'}</span></td>
+                        <td><button class="delete-btn" onclick="deleteExpenditure(${exp.id})">🗑 Delete</button></td>
+                    </tr>`).join('')
+                : '<tr><td colspan="7" style="text-align:center">No expenditures recorded</td></tr>';
+        }
+
+        // ============ REPORT FUNCTIONS ============
+        function generateProgressReport() {
+            const project = getCurrentProject();
+            const water = getProgress('water'), toilet = getProgress('toilet');
+            const reno = getProgress('renovation'), furniture = getProgress('furniture');
+            const expSummary = getExpenditureSummary();
+            document.getElementById('reportContent').innerHTML = `
+                <div class="report-header"><h2>📊 PROJECT PROGRESS REPORT</h2><h3>${project.name}</h3><p>Generated: ${new Date().toLocaleString()}</p></div>
+                <div class="report-section"><h3>Overall Progress</h3>
+                    <p>Water: ${Math.round(water.percent)}% | Toilet: ${Math.round(toilet.percent)}% | Reno: ${Math.round(reno.percent)}% | Furniture: ${Math.round(furniture.percent)}%</p></div>
+                <div class="report-section"><h3>Financial Summary</h3>
+                    <p>Total Budget: ₦${TOTAL_BUDGET.toLocaleString()}</p>
+                    <p>Actually Paid Out: ₦${expSummary.totalSpent.toLocaleString()}</p>
+                    <p>Remaining: ₦${(TOTAL_BUDGET - expSummary.totalSpent).toLocaleString()}</p></div>
+                <div class="report-section"><h3>Recent Activities</h3>
+                    <ul>${project.activityLog.slice(0, 5).map(l => `<li>${l.date}: ${l.component} — ${l.activity}</li>`).join('')}</ul></div>
+            `;
+            showPanel('reports');
+            showToast('Progress report generated');
+        }
+
+        function generateFinancialReport() {
+            const project = getCurrentProject();
+            const expSummary = getExpenditureSummary();
+            const byCategoryHtml = Object.entries(expSummary.byCategory).map(([cat, amt]) =>
+                `<tr><td>${cat}</td><td style="text-align:right">₦${amt.toLocaleString()}</td><td style="text-align:right">${Math.round((amt / TOTAL_BUDGET) * 100)}%</td></tr>`
+            ).join('');
+            document.getElementById('reportContent').innerHTML = `
+                <div class="report-header"><h2>💰 FINANCIAL REPORT</h2><h3>${project.name}</h3><p>Generated: ${new Date().toLocaleString()}</p></div>
+                <div class="report-section"><h3>Financial Summary</h3>
+                    <table style="width:100%">
+                        <tr><td><strong>Total Budget:</strong></td><td style="text-align:right">₦${TOTAL_BUDGET.toLocaleString()}</td></tr>
+                        <tr><td><strong>Actually Paid Out:</strong></td><td style="text-align:right">₦${expSummary.totalSpent.toLocaleString()}</td></tr>
+                        <tr><td><strong>Remaining:</strong></td><td style="text-align:right">₦${(TOTAL_BUDGET - expSummary.totalSpent).toLocaleString()}</td></tr>
+                    </table>
+                </div>
+                <div class="report-section"><h3>Expenditure by Category (Paid Amounts)</h3>
+                    <table style="width:100%"><tr><th>Category</th><th>Paid</th><th>%</th></tr>${byCategoryHtml}</table></div>
+                <div class="report-section"><h3>Detailed Expenditures</h3>
+                    <table style="width:100%"><tr><th>Date</th><th>Description</th><th>Total</th><th>Paid</th><th>Status</th></tr>
+                    ${project.expenditures.map(e => `<tr><td>${e.date}</td><td>${e.description}</td><td style="text-align:right">₦${e.amount.toLocaleString()}</td><td style="text-align:right">₦${getEffectivePaid(e).toLocaleString()}</td><td>${e.status}</td></tr>`).join('')}
+                    </table>
+                </div>
+            `;
+            showPanel('reports');
+            showToast('Financial report generated');
+        }
+
+        function generateFinalReport() {
+            const project = getCurrentProject();
+            const water = getProgress('water'), toilet = getProgress('toilet');
+            const reno = getProgress('renovation'), furniture = getProgress('furniture');
+            const expSummary = getExpenditureSummary();
+            const allComplete = water.percent === 100 && toilet.percent === 100 && reno.percent === 100 && furniture.percent === 100;
+            document.getElementById('reportContent').innerHTML = `
+                <div class="report-header"><h2>🏁 FINAL COMPLETION REPORT</h2><h3>${project.name}</h3>
+                    <p>Client: Niger Agile (World Bank Sponsored)</p><p>Consultant: Logic Triangle Ltd</p>
+                    <p>Date: ${new Date().toLocaleDateString()}</p></div>
+                <div class="report-section"><h3>Component Status</h3>
+                    <table style="width:100%"><tr><th>Component</th><th>Status</th><th>%</th></tr>
+                    <tr><td>💧 Water System</td><td>${water.percent === 100 ? '✅ COMPLETED' : '🔄 In Progress'}</td><td>${Math.round(water.percent)}%</td></tr>
+                    <tr><td>🚽 Toilet Facilities</td><td>${toilet.percent === 100 ? '✅ COMPLETED' : '🔄 In Progress'}</td><td>${Math.round(toilet.percent)}%</td></tr>
+                    <tr><td>🏗️ Classroom Renovation</td><td>${reno.percent === 100 ? '✅ COMPLETED' : '🔄 In Progress'}</td><td>${Math.round(reno.percent)}%</td></tr>
+                    <tr><td>🪑 Furniture</td><td>${furniture.percent === 100 ? '✅ COMPLETED' : '🔄 In Progress'}</td><td>${Math.round(furniture.percent)}%</td></tr>
+                    </table></div>
+                <div class="report-section"><h3>Financial Summary</h3>
+                    <p>Total Budget: ₦${TOTAL_BUDGET.toLocaleString()}</p>
+                    <p>Total Paid Out: ₦${expSummary.totalSpent.toLocaleString()}</p>
+                    <p>Budget Variance: ₦${(TOTAL_BUDGET - expSummary.totalSpent).toLocaleString()}</p></div>
+                <div style="padding:15px;background:#e8f4f8;border-radius:8px;">
+                    <strong>🏆 Project Status:</strong> ${allComplete ? 'FULLY COMPLETED — Ready for Handover' : 'Ongoing — Pending Items Remain'}
+                </div>
+            `;
+            showPanel('reports');
+            showToast('Final report generated');
+        }
+
+        function exportAllData() {
+            const project = getCurrentProject();
+            const blob = new Blob([JSON.stringify({ projectName: project.name, exportDate: new Date().toISOString(), tasks: project.tasks, expenditures: project.expenditures, activityLog: project.activityLog }, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${project.name.replace(/\s/g, '_')}_export_${new Date().toISOString().slice(0, 19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Data exported!');
+        }
+
+        function exportToCSV() {
+            const project = getCurrentProject();
+            let csv = "Type,Item,Status,Total Amount (₦),Paid Amount (₦),Date,Notes\n";
+            for (const comp of ['water', 'toilet', 'renovation']) {
+                project.tasks[comp].forEach(t => { csv += `Task,${t.name},${t.status},,,${t.completedDate || ''},${t.notes || ''}\n`; });
+            }
+            project.tasks.furniture.forEach(t => { csv += `Furniture,${t.name} (${t.qty} units),${t.status},,,,\n`; });
+            project.expenditures.forEach(e => { csv += `Expenditure,${e.description},${e.status},${e.amount},${getEffectivePaid(e)},${e.date},\n`; });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${project.name.replace(/\s/g, '_')}_export.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('CSV exported!');
+        }
+
+        // ============ PROJECT MANAGEMENT ============
+        function switchProject() {
+            currentProjectId = document.getElementById('projectSelect').value;
+            localStorage.setItem('agile_current_project', currentProjectId);
+            refreshAll();
+            showToast(`Switched to ${getCurrentProject()?.name}`);
+        }
+
+        async function deleteCurrentProject() {
+            const project = getCurrentProject();
+            if (!confirm(`Delete "${project.name}"? All data will be permanently lost.`)) return;
+            if (useDB) await deleteFromDB(project.id).catch(() => {});
+            projects = projects.filter(p => p.id !== currentProjectId);
+            if (projects.length === 0) createDefaultProjects();
+            currentProjectId = projects[0].id;
+            saveLocalStorage();
+            updateProjectSelect();
+            refreshAll();
+            showToast('Project deleted');
+        }
+
+        function showAddProjectModal() {
+            document.getElementById('newProjectName').value = '';
+            document.getElementById('addProjectModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('addProjectModal').style.display = 'none';
+        }
+
+        async function addProject() {
+            const name = document.getElementById('newProjectName').value.trim();
+            if (!name) { showToast('Please enter a project name', 'error'); return; }
+            const newProject = {
+                id: 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                name,
+                version: Date.now(),
+                createdAt: new Date().toISOString(),
+                tasks: {
+                    water: TASK_TEMPLATES.water.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
+                    toilet: TASK_TEMPLATES.toilet.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
+                    renovation: TASK_TEMPLATES.renovation.map((n, i) => ({ id: i + 1, name: n, status: 'pending', completedDate: null, notes: '' })),
+                    furniture: TASK_TEMPLATES.furniture.map((item, i) => ({ id: i + 1, name: item.name, qty: item.qty, status: 'pending', completedDate: null }))
+                },
+                expenditures: [],
+                activityLog: []
+            };
+            projects.push(newProject);
+            currentProjectId = newProject.id;
+            saveLocalStorage();
+            if (useDB) await saveToDB(newProject).catch(() => {});
+            updateProjectSelect();
+            refreshAll();
+            closeModal();
+            showToast(`Project "${name}" created!`);
+        }
+
+        function updateProjectSelect() {
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = projects.map(p => `<option value="${p.id}" ${p.id === currentProjectId ? 'selected' : ''}>${p.name}</option>`).join('');
+        }
+
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-panel'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(panelId).classList.add('active-panel');
+            const labels = { dashboard: 'Dashboard', expenditure: 'Expenditure', water: 'Water', toilet: 'Toilet', renovation: 'Classroom', furniture: 'Furniture', reports: 'Reports' };
+            const clickedTab = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent.includes(labels[panelId] || ''));
+            if (clickedTab) clickedTab.classList.add('active');
+        }
+
+        // ============ START ============
+        initApp();
+    </script>
+</body>
+</html>
