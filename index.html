@@ -273,7 +273,6 @@
         <div class="header">
             <div class="header-left">
                 <h1>AGILE Project Management</h1>
-                <div class="subtitle">Adolescent Girls Initiative for Learning and Empowerment &mdash; World Bank Sponsored &nbsp;|&nbsp; Logic Triangle Ltd</div>
                 <div class="sync-indicator" id="syncIndicator">Initialising...</div>
             </div>
         </div>
@@ -338,7 +337,7 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label>Category</label>
-                        <select id="expCategory">
+                        <select id="expCategory" onchange="toggleOtherCategory(this.value)">
                             <option value="Water System">Water System</option>
                             <option value="Toilet Facilities">Toilet Facilities</option>
                             <option value="Classroom Renovation">Classroom Renovation</option>
@@ -351,6 +350,7 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
+                    <div class="form-group" id="otherCategoryGroup" style="display:none"><label>Specify Category</label><input type="text" id="expCategoryOther" placeholder="e.g., Security"></div>
                     <div class="form-group"><label>Total Amount (₦)</label><input type="number" id="expAmount" placeholder="0"></div>
                     <div class="form-group"><label>Status</label>
                         <select id="expStatus" onchange="togglePaidAmount(this.value)">
@@ -859,6 +859,12 @@
         }
 
         // ============ PARTIAL PAYMENT TOGGLE ============
+        function toggleOtherCategory(val) {
+            const g = document.getElementById('otherCategoryGroup');
+            g.style.display = val === 'Other' ? 'block' : 'none';
+            if (val !== 'Other') document.getElementById('expCategoryOther').value = '';
+        }
+
         function togglePaidAmount(status) {
             document.getElementById('paidAmountGroup').style.display = status === 'partial' ? '' : 'none';
             if (status !== 'partial') document.getElementById('expPaidAmount').value = '';
@@ -921,7 +927,7 @@
             const task = project.tasks[component].find(t => t.id === taskId);
             if (task && task.status !== status) {
                 task.status = status;
-                task.completedDate = status === 'completed' ? new Date().toLocaleDateString() : null;
+                if (status !== 'completed') task.completedDate = null;
                 if (status === 'completed') {
                     addActivity(component, task.name, 'Completed');
                     showToast(`✓ ${task.name.substring(0, 40)} completed!`);
@@ -931,6 +937,12 @@
                 refreshComponent(component, component === 'renovation' ? 'renoTasks' : component + 'Tasks', component === 'furniture');
                 document.getElementById(component === 'renovation' ? 'renoProgress' : component + 'Progress').innerHTML = makeProgressBar(getProgress(component).percent);
             }
+        }
+
+        function updateTaskDate(component, taskId, date) {
+            const project = getCurrentProject();
+            const task = project.tasks[component].find(t => t.id === taskId);
+            if (task) { task.completedDate = date; saveCurrentProject(project); }
         }
 
         function updateTaskNote(component, taskId, note) {
@@ -945,7 +957,6 @@
             for (const task of project.tasks[component]) {
                 if (task.status !== 'completed') {
                     task.status = 'completed';
-                    task.completedDate = new Date().toLocaleDateString();
                     addActivity(component, task.name, 'Completed');
                     count++;
                 }
@@ -1024,7 +1035,8 @@
         function addExpenditure() {
             const date = document.getElementById('expDate').value;
             const description = document.getElementById('expDesc').value.trim();
-            const category = document.getElementById('expCategory').value;
+            const catSel = document.getElementById('expCategory').value;
+            const category = catSel === 'Other' ? (document.getElementById('expCategoryOther').value.trim() || 'Other') : catSel;
             const amount = parseFloat(document.getElementById('expAmount').value);
             const status = document.getElementById('expStatus').value;
             const paidAmountRaw = document.getElementById('expPaidAmount').value;
@@ -1054,6 +1066,8 @@
             document.getElementById('expAmount').value = '';
             document.getElementById('expPaidAmount').value = '';
             document.getElementById('expStatus').value = 'paid';
+            document.getElementById('expCategory').value = 'Water System';
+            toggleOtherCategory('Water System');
             togglePaidAmount('paid');
             showToast(`Added: ${description.substring(0, 30)} — ₦${amount.toLocaleString()}`);
             refreshAll();
@@ -1190,7 +1204,7 @@
                             <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
                         </select>
                     </td>
-                    <td>${task.completedDate || '-'}</td>
+                    <td><input type="date" value="${task.completedDate || ''}" onchange="updateTaskDate('${component}', ${task.id}, this.value)" style="width:140px;font-size:12px"></td>
                     ${!isFurniture ? `<td><input type="text" placeholder="Add notes..." value="${task.notes || ''}" style="width:100%" onchange="updateTaskNote('${component}', ${task.id}, this.value)"></td>` : ''}
                 </tr>
             `).join('');
