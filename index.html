@@ -1360,6 +1360,7 @@
         async function deleteCurrentProject() {
             const project = getCurrentProject();
             if (!confirm(`Delete "${project.name}"? All data will be permanently lost.`)) return;
+            if (!confirm(`Are you sure? This cannot be undone. Type OK to confirm.\n\nDeleting: "${project.name}"`)) return;
             projects = projects.filter(p => p.id !== currentProjectId);
             if (projects.length === 0) createDefaultProjects();
             currentProjectId = projects[0].id;
