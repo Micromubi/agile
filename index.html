@@ -128,6 +128,36 @@
         .toast.error { background: #dc2626; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+        /* ── FAB ── */
+        .fab { position: fixed; bottom: 28px; right: 28px; width: 56px; height: 56px; border-radius: 50%; background: #1f2937; color: #fff; border: none; font-size: 26px; line-height: 1; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 900; transition: transform 0.2s, background 0.2s; display: flex; align-items: center; justify-content: center; }
+        .fab:hover { background: #374151; transform: scale(1.08); }
+        .fab.open { transform: rotate(45deg); background: #6b7280; }
+
+        /* ── Quick-add sheet ── */
+        .quick-sheet-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 910; }
+        .quick-sheet-backdrop.open { display: block; }
+        .quick-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-radius: 16px 16px 0 0; padding: 20px 20px 32px; z-index: 920; box-shadow: 0 -4px 24px rgba(0,0,0,0.15); transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); max-height: 90vh; overflow-y: auto; }
+        .quick-sheet.open { transform: translateY(0); }
+        .quick-sheet-handle { width: 40px; height: 4px; background: #d1d5db; border-radius: 2px; margin: 0 auto 16px; }
+        .quick-sheet h3 { font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 16px; }
+        .qs-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .qs-group { flex: 1; min-width: 130px; }
+        .qs-group label { display: block; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+        .qs-group input, .qs-group select { width: 100%; padding: 9px 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #111827; background: #fff; }
+        .qs-group input:focus, .qs-group select:focus { outline: none; border-color: #374151; }
+        .qs-actions { display: flex; gap: 10px; margin-top: 4px; }
+        .qs-submit { flex: 1; background: #1f2937; color: #fff; border: none; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+        .qs-submit:hover { background: #374151; }
+        .qs-cancel { background: #f3f4f6; color: #374151; border: none; padding: 12px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .qs-cancel:hover { background: #e5e7eb; }
+        .qs-paid-group { display: none; }
+
+        @media (min-width: 600px) {
+            .quick-sheet { left: auto; right: 28px; bottom: 96px; width: 380px; border-radius: 12px; transform: scale(0.95); opacity: 0; pointer-events: none; transition: transform 0.2s, opacity 0.2s; }
+            .quick-sheet.open { transform: scale(1); opacity: 1; pointer-events: auto; }
+            .quick-sheet-backdrop { display: none !important; }
+        }
+
         /* ── Forms ── */
         .form-row { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
         .form-group { flex: 1; min-width: 150px; }
@@ -1406,6 +1436,106 @@
 
         // ============ START ============
         initApp();
+    </script>
+
+    <!-- FAB + Quick-add sheet -->
+    <div class="quick-sheet-backdrop" id="qsBackdrop" onclick="closeQuickSheet()"></div>
+    <div class="quick-sheet" id="quickSheet">
+        <div class="quick-sheet-handle"></div>
+        <h3>Quick Add Expenditure</h3>
+        <div class="qs-row">
+            <div class="qs-group" style="flex:0 0 150px"><label>Date</label><input type="date" id="qsDate"></div>
+            <div class="qs-group"><label>Category</label>
+                <select id="qsCategory">
+                    <option value="Water System">Water System</option>
+                    <option value="Toilet Facilities">Toilet Facilities</option>
+                    <option value="Classroom Renovation">Classroom Renovation</option>
+                    <option value="Furniture">Furniture</option>
+                    <option value="Preliminaries">Preliminaries</option>
+                    <option value="Labour">Labour</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Materials">Materials</option>
+                    <option value="Contingency">Contingency</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="qs-row">
+            <div class="qs-group"><label>Description</label><input type="text" id="qsDesc" placeholder="e.g., Cement — 50 bags"></div>
+        </div>
+        <div class="qs-row">
+            <div class="qs-group"><label>Amount (₦)</label><input type="number" id="qsAmount" placeholder="0" inputmode="numeric"></div>
+            <div class="qs-group" style="flex:0 0 140px"><label>Status</label>
+                <select id="qsStatus" onchange="toggleQsPaid(this.value)">
+                    <option value="paid">Paid</option>
+                    <option value="partial">Partial</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+        </div>
+        <div class="qs-row qs-paid-group" id="qsPaidGroup">
+            <div class="qs-group"><label>Amount Actually Paid (₦)</label><input type="number" id="qsPaidAmount" placeholder="0" inputmode="numeric"></div>
+        </div>
+        <div class="qs-actions">
+            <button class="qs-cancel" onclick="closeQuickSheet()">Cancel</button>
+            <button class="qs-submit" onclick="submitQuickExp()">Add Expenditure</button>
+        </div>
+    </div>
+    <button class="fab" id="fab" onclick="toggleQuickSheet()">+</button>
+
+    <script>
+        function toggleQuickSheet() {
+            const open = document.getElementById('quickSheet').classList.toggle('open');
+            document.getElementById('qsBackdrop').classList.toggle('open', open);
+            document.getElementById('fab').classList.toggle('open', open);
+            if (open) {
+                document.getElementById('qsDate').value = new Date().toISOString().split('T')[0];
+                setTimeout(() => document.getElementById('qsDesc').focus(), 300);
+            }
+        }
+        function closeQuickSheet() {
+            document.getElementById('quickSheet').classList.remove('open');
+            document.getElementById('qsBackdrop').classList.remove('open');
+            document.getElementById('fab').classList.remove('open');
+        }
+        function toggleQsPaid(status) {
+            document.getElementById('qsPaidGroup').style.display = status === 'partial' ? 'flex' : 'none';
+            if (status !== 'partial') document.getElementById('qsPaidAmount').value = '';
+        }
+        function submitQuickExp() {
+            const date = document.getElementById('qsDate').value;
+            const description = document.getElementById('qsDesc').value.trim();
+            const category = document.getElementById('qsCategory').value;
+            const amount = parseFloat(document.getElementById('qsAmount').value);
+            const status = document.getElementById('qsStatus').value;
+            const paidAmountRaw = document.getElementById('qsPaidAmount').value;
+            const paidAmount = paidAmountRaw ? parseFloat(paidAmountRaw) : null;
+
+            if (!date || !description || !amount || amount <= 0) {
+                showToast('Please fill date, description and amount', 'error'); return;
+            }
+            if (status === 'partial' && (!paidAmount || paidAmount <= 0 || paidAmount > amount)) {
+                showToast('Enter a valid paid amount', 'error'); return;
+            }
+
+            const project = getCurrentProject();
+            project.expenditures.push({
+                id: Date.now(), date, description, category, amount,
+                paidAmount: status === 'partial' ? paidAmount : (status === 'paid' ? amount : 0),
+                status, createdAt: new Date().toISOString()
+            });
+            saveCurrentProject(project);
+            addActivity('Finance', `Added: ${description} (₦${amount.toLocaleString()})`, 'Recorded');
+
+            document.getElementById('qsDesc').value = '';
+            document.getElementById('qsAmount').value = '';
+            document.getElementById('qsPaidAmount').value = '';
+            document.getElementById('qsStatus').value = 'paid';
+            toggleQsPaid('paid');
+            closeQuickSheet();
+            showToast(`Added: ${description.substring(0, 30)} — ₦${amount.toLocaleString()}`);
+            refreshAll();
+        }
     </script>
 </body>
 </html>
