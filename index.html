@@ -71,10 +71,10 @@
         .progress-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #111827; }
         .progress-card .budget-line { font-size: 11px; color: #9ca3af; margin-bottom: 8px; display: flex; justify-content: space-between; }
         .progress-bar-container { background: #f3f4f6; border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 5px; }
-        .progress-fill { background: #374151; height: 100%; border-radius: 4px; transition: width 0.3s ease; min-width: 0; }
-        .progress-pct { font-size: 12px; font-weight: 700; color: #374151; }
+        .progress-fill { background: #16a34a; height: 100%; border-radius: 4px; transition: width 0.3s ease; min-width: 0; }
+        .progress-pct { font-size: 12px; font-weight: 700; color: #15803d; }
         .spend-bar-container { background: #f3f4f6; border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 3px; }
-        .spend-fill { background: #6b7280; height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+        .spend-fill { background: #16a34a; height: 100%; border-radius: 4px; transition: width 0.3s ease; }
         .spend-fill.over { background: #dc2626; }
 
         /* ── Stats Grid ── */
@@ -157,12 +157,84 @@
         .payment-summary-item.bad .ps-amount { color: #b91c1c; }
 
         @media (max-width: 768px) {
+            /* Layout */
             .container { padding: 0; }
-            .project-tabbar, .section-tabbar { padding: 0 12px; }
-            .tab, .project-tab { padding: 10px 14px; font-size: 12px; }
-            .data-table th, .data-table td { padding: 8px; font-size: 11px; }
-            .budget-inputs { grid-template-columns: 1fr; }
-            .card { border-radius: 0; border-left: none; border-right: none; padding: 16px; }
+            .card { border-radius: 0; border-left: none; border-right: none; padding: 14px; margin-bottom: 10px; }
+            .card-title { font-size: 13px; }
+
+            /* Header */
+            .header { padding: 14px 16px; margin: 0; flex-direction: column; align-items: flex-start; gap: 4px; }
+            .header-left h1 { font-size: 16px; }
+            .header-left .subtitle { font-size: 10px; line-height: 1.4; }
+
+            /* Project tab bar */
+            .project-tabbar { padding: 0; margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .project-tabbar::-webkit-scrollbar { display: none; }
+            .project-tab { padding: 11px 14px; font-size: 12px; }
+            .project-tab-add { padding: 11px 14px; }
+            .project-actions { padding: 6px 10px; gap: 6px; }
+            .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+            /* Section tabs */
+            .section-tabbar { padding: 0; margin: 0 0 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; }
+            .section-tabbar::-webkit-scrollbar { display: none; }
+            .tab { padding: 10px 13px; font-size: 12px; white-space: nowrap; }
+
+            /* Budget cards */
+            .budget-summary { grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; margin-bottom: 0; }
+            .budget-card { padding: 12px 14px; }
+            .budget-card .amount { font-size: 17px; }
+            .budget-card h4 { font-size: 10px; }
+            .budget-card .sub { font-size: 10px; }
+
+            /* Component grid */
+            .component-budget-grid { grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 14px; margin-bottom: 10px; }
+            .component-budget-card { padding: 12px; }
+            .component-budget-card h5 { font-size: 12px; }
+            .cbc-row { font-size: 11px; }
+
+            /* Stats */
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 14px; margin-bottom: 10px; }
+            .stat-card { padding: 12px 8px; }
+            .stat-number { font-size: 20px; }
+            .stat-label { font-size: 10px; }
+
+            /* Progress section */
+            .progress-section { grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 14px; margin-bottom: 10px; }
+            .progress-card { padding: 12px; }
+            .progress-card h4 { font-size: 12px; }
+
+            /* Tables — horizontal scroll */
+            .data-table th, .data-table td { padding: 8px 8px; font-size: 11px; }
+            /* Hide less critical columns on very small screens */
+            @media (max-width: 480px) {
+                .data-table th:nth-child(3), .data-table td:nth-child(3) { display: none; }
+            }
+
+            /* Forms */
+            .form-row { flex-direction: column; gap: 10px; }
+            .form-group { min-width: unset; }
+            .action-buttons { flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+            button { font-size: 13px; padding: 10px 16px; }
+
+            /* Payments */
+            .payment-row { gap: 8px; padding: 10px 0; }
+            .payment-amount { width: 130px; }
+            .payment-date { width: 125px; }
+            .payment-summary { gap: 8px; }
+            .payment-summary-item { min-width: 90px; padding: 10px 8px; }
+            .payment-summary-item .ps-amount { font-size: 15px; }
+
+            /* Modal */
+            .modal { padding: 0; align-items: flex-end; }
+            .modal-content { border-radius: 12px 12px 0 0; max-width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px 16px; }
+            .budget-inputs { grid-template-columns: 1fr; gap: 10px; }
+
+            /* Toast */
+            .toast { bottom: 14px; right: 14px; left: 14px; text-align: center; }
+
+            /* Reports */
+            .report-container { padding: 16px; font-size: 12px; }
         }
     </style>
 </head>
