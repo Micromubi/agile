@@ -12,9 +12,7 @@ export default async function handler(req, res) {
         if (req.method === 'GET') {
             const { blobs } = await list({ prefix: BLOB_KEY });
             if (!blobs.length) return res.status(200).json([]);
-            const r = await fetch(blobs[0].url, {
-                headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` }
-            });
+            const r = await fetch(blobs[0].url);
             if (!r.ok) return res.status(200).json([]);
             return res.status(200).json(await r.json());
         }
@@ -23,7 +21,7 @@ export default async function handler(req, res) {
             const projects = req.body;
             if (!Array.isArray(projects)) return res.status(400).json({ error: 'Expected array' });
             await put(BLOB_KEY, JSON.stringify(projects), {
-                access: 'private',
+                access: 'public',
                 addRandomSuffix: false
             });
             return res.status(200).json({ success: true });
