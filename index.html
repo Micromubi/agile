@@ -640,32 +640,29 @@
         // ============ SYNC ============
         function setSync(msg) { document.getElementById('syncIndicator').textContent = msg; }
 
-        // ============ DB API ============
+        // ============ DB API (Vercel Blob) ============
         async function loadFromDB() {
             const res = await fetch('/api/projects');
             if (!res.ok) throw new Error('DB unavailable');
             return res.json();
         }
-        async function saveToDB(project) {
+        async function saveToDB() {
             const res = await fetch('/api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(project)
+                body: JSON.stringify(projects)
             });
             if (!res.ok) throw new Error('Save failed');
         }
-        async function deleteFromDB(id) {
-            await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-        }
 
-        function autoSave(project) {
+        function autoSave() {
             clearTimeout(saveTimer);
             saveTimer = setTimeout(async () => {
                 saveLocalStorage();
                 if (!useDB) return;
                 try {
                     setSync('Saving...');
-                    await saveToDB(project);
+                    await saveToDB();
                     setSync('Saved');
                     setTimeout(() => setSync('Cloud sync active'), 2000);
                 } catch {
@@ -700,7 +697,7 @@
                     projects = projects.map(ensureBudget);
                     useDB = true;
                     setSync('Migrating to cloud...');
-                    for (const p of projects) await saveToDB(p).catch(() => {});
+                    await saveToDB().catch(() => {});
                     setSync('Cloud sync active');
                 }
             } catch {
@@ -771,7 +768,7 @@
         function saveCurrentProject(updatedProject) {
             updatedProject.version = Date.now();
             const index = projects.findIndex(p => p.id === currentProjectId);
-            if (index !== -1) { projects[index] = updatedProject; autoSave(updatedProject); }
+            if (index !== -1) { projects[index] = updatedProject; autoSave(); }
         }
 
         function addActivity(component, activity, status) {
@@ -1363,11 +1360,11 @@
         async function deleteCurrentProject() {
             const project = getCurrentProject();
             if (!confirm(`Delete "${project.name}"? All data will be permanently lost.`)) return;
-            if (useDB) await deleteFromDB(project.id).catch(() => {});
             projects = projects.filter(p => p.id !== currentProjectId);
             if (projects.length === 0) createDefaultProjects();
             currentProjectId = projects[0].id;
             saveLocalStorage();
+            if (useDB) await saveToDB().catch(() => {});
             updateProjectSelect();
             refreshAll();
             showToast('Project deleted');
@@ -1396,7 +1393,7 @@
             projects.push(newProject);
             currentProjectId = newProject.id;
             saveLocalStorage();
-            if (useDB) await saveToDB(newProject).catch(() => {});
+            if (useDB) await saveToDB().catch(() => {});
             updateProjectSelect();
             refreshAll();
             closeModal('addProjectModal');

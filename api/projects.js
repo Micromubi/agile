@@ -1,48 +1,35 @@
-import { sql } from '@vercel/postgres';
+import { put, list } from '@vercel/blob';
+
+const BLOB_KEY = 'agile-projects/data.json';
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
-        await sql`
-            CREATE TABLE IF NOT EXISTS projects (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                data JSONB NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        `;
-
         if (req.method === 'GET') {
-            const { rows } = await sql`SELECT data FROM projects ORDER BY created_at`;
-            return res.status(200).json(rows.map(r => r.data));
+            const { blobs } = await list({ prefix: BLOB_KEY });
+            if (!blobs.length) return res.status(200).json([]);
+            const r = await fetch(blobs[0].url);
+            if (!r.ok) return res.status(200).json([]);
+            return res.status(200).json(await r.json());
         }
 
         if (req.method === 'POST') {
-            const project = req.body;
-            if (!project?.id || !project?.name) return res.status(400).json({ error: 'Missing id or name' });
-            await sql`
-                INSERT INTO projects (id, name, data)
-                VALUES (${project.id}, ${project.name}, ${JSON.stringify(project)})
-                ON CONFLICT (id) DO UPDATE SET data = ${JSON.stringify(project)}, name = ${project.name}
-            `;
-            return res.status(200).json({ success: true });
-        }
-
-        if (req.method === 'DELETE') {
-            const { id } = req.query;
-            if (!id) return res.status(400).json({ error: 'Missing id' });
-            await sql`DELETE FROM projects WHERE id = ${id}`;
+            const projects = req.body;
+            if (!Array.isArray(projects)) return res.status(400).json({ error: 'Expected array' });
+            await put(BLOB_KEY, JSON.stringify(projects), {
+                access: 'public',
+                addRandomSuffix: false
+            });
             return res.status(200).json({ success: true });
         }
 
         return res.status(405).json({ error: 'Method not allowed' });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ error: 'Server error', detail: err.message });
+        return res.status(500).json({ error: err.message });
     }
 }
