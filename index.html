@@ -284,13 +284,13 @@
 
         <!-- Section Tabs -->
         <div class="section-tabbar">
-            <button class="tab active" onclick="showPanel('dashboard')">Dashboard</button>
-            <button class="tab" onclick="showPanel('expenditure')">Expenditure</button>
-            <button class="tab" onclick="showPanel('water')">Water System</button>
-            <button class="tab" onclick="showPanel('toilet')">Toilet Facilities</button>
-            <button class="tab" onclick="showPanel('renovation')">Classroom Reno</button>
-            <button class="tab" onclick="showPanel('furniture')">Furniture</button>
-            <button class="tab" onclick="showPanel('reports')">Reports</button>
+            <button class="tab active" data-panel="dashboard" onclick="showPanel('dashboard')">Dashboard</button>
+            <button class="tab" data-panel="expenditure" onclick="showPanel('expenditure')">Expenditure</button>
+            <button class="tab" data-panel="water" onclick="showPanel('water')">Water System</button>
+            <button class="tab" data-panel="toilet" onclick="showPanel('toilet')">Toilet Facilities</button>
+            <button class="tab" data-panel="renovation" onclick="showPanel('renovation')">Classroom Reno</button>
+            <button class="tab" data-panel="furniture" onclick="showPanel('furniture')">Furniture</button>
+            <button class="tab" data-panel="reports" onclick="showPanel('reports')">Reports</button>
         </div>
 
         <!-- Dashboard -->
@@ -627,8 +627,26 @@
             contingency: 1800000  // 700k E&S + 1.1M contingency
         };
 
+        const DEFAULT_PROJECT_NAMES = ['Tungan Kawo', 'Maile', 'Takunti', 'Egba'];
+
+        const BUDGET_KEYS = ['water', 'toilet', 'renovation', 'furniture', 'preliminaries', 'contingency'];
+        const BUDGET_FIELD_LABELS = ['Water', 'Toilet', 'Renovation', 'Furniture', 'Preliminaries', 'Contingency'];
+
         function calcBudgetTotal(b) {
-            return b.water + b.toilet + b.renovation + b.furniture + b.preliminaries + b.contingency;
+            return BUDGET_KEYS.reduce((s, k) => s + (b[k] || 0), 0);
+        }
+
+        function readBudgetFields(prefix) {
+            const obj = {};
+            BUDGET_KEYS.forEach((k, i) => {
+                obj[k] = parseFloat(document.getElementById(prefix + BUDGET_FIELD_LABELS[i]).value) || 0;
+            });
+            return obj;
+        }
+
+        function statusBadge(status) {
+            const label = status === 'paid' ? 'Paid' : status === 'partial' ? 'Partial' : 'Pending';
+            return `<span class="status-badge status-${status}">${label}</span>`;
         }
 
         // ============ STATE ============
@@ -636,6 +654,7 @@
         let currentProjectId = null;
         let useDB = false;
         let saveTimer = null;
+        let syncLabelTimer = null;
 
         // ============ SYNC ============
         function setSync(msg) { document.getElementById('syncIndicator').textContent = msg; }
@@ -664,7 +683,8 @@
                     setSync('Saving...');
                     await saveToDB();
                     setSync('Saved');
-                    setTimeout(() => setSync('Cloud sync active'), 2000);
+                    clearTimeout(syncLabelTimer);
+                    syncLabelTimer = setTimeout(() => setSync('Cloud sync active'), 2000);
                 } catch {
                     setSync('Cloud save failed — saved locally');
                 }
@@ -738,8 +758,7 @@
         }
 
         function createDefaultProjects() {
-            const defaultNames = ['Tungan Kawo', 'Maile', 'Takunti', 'Egba'];
-            projects = defaultNames.map((name, idx) => makeProject('proj_' + (idx + 1) + '_' + Date.now(), name));
+            projects = DEFAULT_PROJECT_NAMES.map((name, idx) => makeProject('proj_' + (idx + 1) + '_' + Date.now(), name));
             currentProjectId = projects[0].id;
             saveLocalStorage();
         }
@@ -878,17 +897,12 @@
             eids.forEach(id => document.getElementById(id).addEventListener('input', updateEditTotal));
         }
 
-        function updateNewProjectTotal() {
-            const ids = ['budgetWater','budgetToilet','budgetRenovation','budgetFurniture','budgetPreliminaries','budgetContingency'];
-            const total = ids.reduce((s, id) => s + (parseFloat(document.getElementById(id).value) || 0), 0);
-            document.getElementById('newProjectTotal').textContent = `Grand Total: ₦${total.toLocaleString()}`;
+        function updateBudgetTotal(prefix, outputId) {
+            const total = calcBudgetTotal(readBudgetFields(prefix));
+            document.getElementById(outputId).textContent = `Grand Total: ₦${total.toLocaleString()}`;
         }
-
-        function updateEditTotal() {
-            const ids = ['editBudgetWater','editBudgetToilet','editBudgetRenovation','editBudgetFurniture','editBudgetPreliminaries','editBudgetContingency'];
-            const total = ids.reduce((s, id) => s + (parseFloat(document.getElementById(id).value) || 0), 0);
-            document.getElementById('editProjectTotal').textContent = `Grand Total: ₦${total.toLocaleString()}`;
-        }
+        const updateNewProjectTotal = () => updateBudgetTotal('budget', 'newProjectTotal');
+        const updateEditTotal = () => updateBudgetTotal('editBudget', 'editProjectTotal');
 
         function showBudgetModal() {
             const project = getCurrentProject();
@@ -907,14 +921,7 @@
 
         function saveBudget() {
             const project = getCurrentProject();
-            project.budget = {
-                water: parseFloat(document.getElementById('editBudgetWater').value) || 0,
-                toilet: parseFloat(document.getElementById('editBudgetToilet').value) || 0,
-                renovation: parseFloat(document.getElementById('editBudgetRenovation').value) || 0,
-                furniture: parseFloat(document.getElementById('editBudgetFurniture').value) || 0,
-                preliminaries: parseFloat(document.getElementById('editBudgetPreliminaries').value) || 0,
-                contingency: parseFloat(document.getElementById('editBudgetContingency').value) || 0
-            };
+            project.budget = readBudgetFields('editBudget');
             saveCurrentProject(project);
             closeModal('budgetModal');
             refreshAll();
@@ -939,16 +946,10 @@
             }
         }
 
-        function updateTaskDate(component, taskId, date) {
+        function updateTaskField(component, taskId, field, value) {
             const project = getCurrentProject();
             const task = project.tasks[component].find(t => t.id === taskId);
-            if (task) { task.completedDate = date; saveCurrentProject(project); }
-        }
-
-        function updateTaskNote(component, taskId, note) {
-            const project = getCurrentProject();
-            const task = project.tasks[component].find(t => t.id === taskId);
-            if (task) { task.notes = note; saveCurrentProject(project); }
+            if (task) { task[field] = value; saveCurrentProject(project); }
         }
 
         function markComplete(component) {
@@ -1041,27 +1042,9 @@
             const status = document.getElementById('expStatus').value;
             const paidAmountRaw = document.getElementById('expPaidAmount').value;
             const paidAmount = paidAmountRaw ? parseFloat(paidAmountRaw) : null;
-
-            if (!date || !description || !amount || amount <= 0) {
-                showToast('Please fill all fields correctly', 'error');
-                return;
-            }
-            if (status === 'partial' && (!paidAmount || paidAmount <= 0 || paidAmount > amount)) {
-                showToast('Enter a valid paid amount (less than total)', 'error');
-                return;
-            }
-
-            const project = getCurrentProject();
-            const newExp = {
-                id: Date.now(), date, description, category, amount,
-                paidAmount: status === 'partial' ? paidAmount : (status === 'paid' ? amount : 0),
-                status,
-                createdAt: new Date().toISOString()
-            };
-            project.expenditures.push(newExp);
-            saveCurrentProject(project);
-            addActivity('Finance', `Added: ${description} (₦${amount.toLocaleString()})`, 'Recorded');
-
+            if (!date || !description || !amount || amount <= 0) { showToast('Please fill all fields correctly', 'error'); return; }
+            if (status === 'partial' && (!paidAmount || paidAmount <= 0 || paidAmount > amount)) { showToast('Enter a valid paid amount (less than total)', 'error'); return; }
+            saveExpenditure(date, description, category, amount, status, paidAmount);
             document.getElementById('expDesc').value = '';
             document.getElementById('expAmount').value = '';
             document.getElementById('expPaidAmount').value = '';
@@ -1069,8 +1052,6 @@
             document.getElementById('expCategory').value = 'Water System';
             toggleOtherCategory('Water System');
             togglePaidAmount('paid');
-            showToast(`Added: ${description.substring(0, 30)} — ₦${amount.toLocaleString()}`);
-            refreshAll();
         }
 
         function deleteExpenditure(expId) {
@@ -1085,18 +1066,22 @@
 
         // ============ REFRESH UI ============
         function refreshAll() {
-            refreshDashboard();
-            refreshPayments();
             const project = getCurrentProject();
             if (!project) return;
-            const b = project.budget;
+            const progress = {
+                water: getProgress('water'),
+                toilet: getProgress('toilet'),
+                renovation: getProgress('renovation'),
+                furniture: getProgress('furniture')
+            };
             const expSummary = getExpenditureSummary();
             const spent = getSpentByComponent(null, expSummary);
-
+            const b = project.budget;
+            refreshDashboard(progress, expSummary, spent);
+            refreshPayments();
             ['water', 'toilet', 'renovation', 'furniture'].forEach(c => {
-                const p = getProgress(c);
                 const progEl = document.getElementById(c === 'renovation' ? 'renoProgress' : c + 'Progress');
-                if (progEl) progEl.innerHTML = makeProgressBar(p.percent);
+                if (progEl) progEl.innerHTML = makeProgressBar(progress[c].percent);
                 const budBar = document.getElementById(c + 'BudgetBar');
                 if (budBar) budBar.innerHTML = makeSpendBar(spent[c], b[c]);
             });
@@ -1104,21 +1089,22 @@
             refreshComponent('toilet', 'toiletTasks', false);
             refreshComponent('renovation', 'renoTasks', false);
             refreshComponent('furniture', 'furnitureTasks', true);
-            refreshExpenditures();
+            refreshExpenditures(expSummary);
         }
 
-        function refreshDashboard() {
+        function refreshDashboard(progress, expSummary, spent) {
             const project = getCurrentProject();
             if (!project) return;
+            progress = progress || { water: getProgress('water'), toilet: getProgress('toilet'), renovation: getProgress('renovation'), furniture: getProgress('furniture') };
+            expSummary = expSummary || getExpenditureSummary();
+            spent = spent || getSpentByComponent(null, expSummary);
 
             const b = project.budget;
             const grandTotal = calcBudgetTotal(b);
-            const water = getProgress('water');
-            const toilet = getProgress('toilet');
-            const reno = getProgress('renovation');
-            const furniture = getProgress('furniture');
-            const expSummary = getExpenditureSummary();
-            const spent = getSpentByComponent(null, expSummary);
+            const water = progress.water;
+            const toilet = progress.toilet;
+            const reno = progress.renovation;
+            const furniture = progress.furniture;
             const totalComplete = water.completed + toilet.completed + reno.completed + furniture.completed;
             const totalTasks = water.total + toilet.total + reno.total + furniture.total;
             const overallPercent = totalTasks > 0 ? (totalComplete / totalTasks) * 100 : 0;
@@ -1182,7 +1168,7 @@
                         <td>${exp.category}</td>
                         <td style="font-weight:bold">₦${exp.amount.toLocaleString()}</td>
                         <td style="font-weight:bold;color:#48bb78">₦${getEffectivePaid(exp).toLocaleString()}</td>
-                        <td><span class="status-badge status-${exp.status}">${exp.status === 'paid' ? 'Paid' : exp.status === 'partial' ? 'Partial' : 'Pending'}</span></td>
+                        <td>${statusBadge(exp.status)}</td>
                     </tr>`).join('')
                 : '<tr><td colspan="6" style="text-align:center;color:#718096">No expenditures recorded</td></tr>';
 
@@ -1204,17 +1190,17 @@
                             <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
                         </select>
                     </td>
-                    <td><input type="date" value="${task.completedDate || ''}" onchange="updateTaskDate('${component}', ${task.id}, this.value)" style="width:140px;font-size:12px"></td>
-                    ${!isFurniture ? `<td><input type="text" placeholder="Add notes..." value="${task.notes || ''}" style="width:100%" onchange="updateTaskNote('${component}', ${task.id}, this.value)"></td>` : ''}
+                    <td><input type="date" value="${task.completedDate || ''}" onchange="updateTaskField('${component}', ${task.id}, 'completedDate', this.value)" style="width:140px;font-size:12px"></td>
+                    ${!isFurniture ? `<td><input type="text" placeholder="Add notes..." value="${task.notes || ''}" style="width:100%" onchange="updateTaskField('${component}', ${task.id}, 'notes', this.value)"></td>` : ''}
                 </tr>
             `).join('');
         }
 
-        function refreshExpenditures() {
+        function refreshExpenditures(expSummary) {
             const project = getCurrentProject();
             const b = project.budget;
             const grandTotal = calcBudgetTotal(b);
-            const expSummary = getExpenditureSummary();
+            expSummary = expSummary || getExpenditureSummary();
             const remaining = grandTotal - expSummary.totalSpent;
 
             document.getElementById('expenditureSummary').innerHTML = `
@@ -1229,7 +1215,7 @@
                         <td>${exp.date}</td><td>${exp.description}</td><td>${exp.category}</td>
                         <td style="font-weight:bold">₦${exp.amount.toLocaleString()}</td>
                         <td style="font-weight:bold;color:#48bb78">₦${getEffectivePaid(exp).toLocaleString()}</td>
-                        <td><span class="status-badge status-${exp.status}">${exp.status === 'paid' ? 'Paid' : exp.status === 'partial' ? 'Partial' : 'Pending'}</span></td>
+                        <td>${statusBadge(exp.status)}</td>
                         <td><button class="delete-btn" onclick="deleteExpenditure(${exp.id})">Delete</button></td>
                     </tr>`).join('')
                 : '<tr><td colspan="7" style="text-align:center;color:#718096">No expenditures recorded</td></tr>';
@@ -1315,6 +1301,7 @@
             const water = getProgress('water'), toilet = getProgress('toilet');
             const reno = getProgress('renovation'), furniture = getProgress('furniture');
             const expSummary = getExpenditureSummary();
+            const spent = getSpentByComponent(null, expSummary);
             const allComplete = [water, toilet, reno, furniture].every(p => p.percent === 100);
             document.getElementById('reportContent').innerHTML = `
                 <div class="report-header"><h2>FINAL COMPLETION REPORT</h2><h3>${project.name}</h3>
@@ -1323,7 +1310,7 @@
                 <div class="report-section"><h3>Component Status</h3>
                     <table style="width:100%"><tr><th>Component</th><th>Status</th><th>%</th><th>Budget (₦)</th><th>Spent (₦)</th></tr>
                     ${[['Water System','water',water,b.water],['Toilet','toilet',toilet,b.toilet],['Renovation','renovation',reno,b.renovation],['Furniture','furniture',furniture,b.furniture]].map(([label,key,prog,budget]) => {
-                        const s = (getSpentByComponent(null, getExpenditureSummary()))[key] || 0;
+                        const s = spent[key] || 0;
                         return `<tr><td>${label}</td><td>${prog.percent===100?'COMPLETED':'In Progress'}</td><td>${Math.round(prog.percent)}%</td><td>₦${budget.toLocaleString()}</td><td>₦${s.toLocaleString()}</td></tr>`;
                     }).join('')}
                     </table></div>
@@ -1364,13 +1351,6 @@
         }
 
         // ============ PROJECT MANAGEMENT ============
-        function switchProject() {
-            currentProjectId = document.getElementById('projectSelect').value;
-            localStorage.setItem('agile_current_project', currentProjectId);
-            refreshAll();
-            showToast(`Switched to ${getCurrentProject()?.name}`);
-        }
-
         async function deleteCurrentProject() {
             const project = getCurrentProject();
             if (!confirm(`Delete "${project.name}"? All data will be permanently lost.`)) return;
@@ -1396,14 +1376,7 @@
         async function addProject() {
             const name = document.getElementById('newProjectName').value.trim();
             if (!name) { showToast('Please enter a project name', 'error'); return; }
-            const budget = {
-                water: parseFloat(document.getElementById('budgetWater').value) || 0,
-                toilet: parseFloat(document.getElementById('budgetToilet').value) || 0,
-                renovation: parseFloat(document.getElementById('budgetRenovation').value) || 0,
-                furniture: parseFloat(document.getElementById('budgetFurniture').value) || 0,
-                preliminaries: parseFloat(document.getElementById('budgetPreliminaries').value) || 0,
-                contingency: parseFloat(document.getElementById('budgetContingency').value) || 0
-            };
+            const budget = readBudgetFields('budget');
             const newProject = makeProject('proj_' + Date.now() + '_' + Math.random().toString(36).substr(2,6), name, budget);
             projects.push(newProject);
             currentProjectId = newProject.id;
@@ -1441,9 +1414,60 @@
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-panel'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById(panelId).classList.add('active-panel');
-            const labels = { dashboard:'Dashboard', expenditure:'Expenditure', water:'Water', toilet:'Toilet', renovation:'Classroom', furniture:'Furniture', reports:'Reports' };
-            const tab = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent.includes(labels[panelId] || ''));
+            const tab = document.querySelector(`.tab[data-panel="${panelId}"]`);
             if (tab) tab.classList.add('active');
+        }
+
+        // ============ SHARED EXPENDITURE SAVE ============
+        function saveExpenditure(date, description, category, amount, status, paidAmount) {
+            const project = getCurrentProject();
+            project.expenditures.push({
+                id: Date.now(), date, description, category, amount,
+                paidAmount: status === 'partial' ? paidAmount : (status === 'paid' ? amount : 0),
+                status, createdAt: new Date().toISOString()
+            });
+            saveCurrentProject(project);
+            addActivity('Finance', `Added: ${description} (₦${amount.toLocaleString()})`, 'Recorded');
+            showToast(`Added: ${description.substring(0, 30)} — ₦${amount.toLocaleString()}`);
+            refreshAll();
+        }
+
+        // ============ FAB / QUICK-ADD ============
+        function toggleQuickSheet() {
+            const open = document.getElementById('quickSheet').classList.toggle('open');
+            document.getElementById('qsBackdrop').classList.toggle('open', open);
+            document.getElementById('fab').classList.toggle('open', open);
+            if (open) {
+                document.getElementById('qsDate').value = new Date().toISOString().split('T')[0];
+                setTimeout(() => document.getElementById('qsDesc').focus(), 300);
+            }
+        }
+        function closeQuickSheet() {
+            document.getElementById('quickSheet').classList.remove('open');
+            document.getElementById('qsBackdrop').classList.remove('open');
+            document.getElementById('fab').classList.remove('open');
+        }
+        function toggleQsPaid(status) {
+            document.getElementById('qsPaidGroup').style.display = status === 'partial' ? 'flex' : 'none';
+            if (status !== 'partial') document.getElementById('qsPaidAmount').value = '';
+        }
+        function submitQuickExp() {
+            const date = document.getElementById('qsDate').value;
+            const description = document.getElementById('qsDesc').value.trim();
+            const category = document.getElementById('qsCategory').value;
+            const amount = parseFloat(document.getElementById('qsAmount').value);
+            const status = document.getElementById('qsStatus').value;
+            const paidAmountRaw = document.getElementById('qsPaidAmount').value;
+            const paidAmount = paidAmountRaw ? parseFloat(paidAmountRaw) : null;
+            if (!date || !description || !amount || amount <= 0) { showToast('Please fill date, description and amount', 'error'); return; }
+            if (status === 'partial' && (!paidAmount || paidAmount <= 0 || paidAmount > amount)) { showToast('Enter a valid paid amount', 'error'); return; }
+            saveExpenditure(date, description, category, amount, status, paidAmount);
+            document.getElementById('qsDesc').value = '';
+            document.getElementById('qsAmount').value = '';
+            document.getElementById('qsPaidAmount').value = '';
+            document.getElementById('qsStatus').value = 'paid';
+            toggleQsPaid('paid');
+            closeQuickSheet();
         }
 
         // ============ START ============
@@ -1494,60 +1518,5 @@
         </div>
     </div>
     <button class="fab" id="fab" onclick="toggleQuickSheet()">+</button>
-
-    <script>
-        function toggleQuickSheet() {
-            const open = document.getElementById('quickSheet').classList.toggle('open');
-            document.getElementById('qsBackdrop').classList.toggle('open', open);
-            document.getElementById('fab').classList.toggle('open', open);
-            if (open) {
-                document.getElementById('qsDate').value = new Date().toISOString().split('T')[0];
-                setTimeout(() => document.getElementById('qsDesc').focus(), 300);
-            }
-        }
-        function closeQuickSheet() {
-            document.getElementById('quickSheet').classList.remove('open');
-            document.getElementById('qsBackdrop').classList.remove('open');
-            document.getElementById('fab').classList.remove('open');
-        }
-        function toggleQsPaid(status) {
-            document.getElementById('qsPaidGroup').style.display = status === 'partial' ? 'flex' : 'none';
-            if (status !== 'partial') document.getElementById('qsPaidAmount').value = '';
-        }
-        function submitQuickExp() {
-            const date = document.getElementById('qsDate').value;
-            const description = document.getElementById('qsDesc').value.trim();
-            const category = document.getElementById('qsCategory').value;
-            const amount = parseFloat(document.getElementById('qsAmount').value);
-            const status = document.getElementById('qsStatus').value;
-            const paidAmountRaw = document.getElementById('qsPaidAmount').value;
-            const paidAmount = paidAmountRaw ? parseFloat(paidAmountRaw) : null;
-
-            if (!date || !description || !amount || amount <= 0) {
-                showToast('Please fill date, description and amount', 'error'); return;
-            }
-            if (status === 'partial' && (!paidAmount || paidAmount <= 0 || paidAmount > amount)) {
-                showToast('Enter a valid paid amount', 'error'); return;
-            }
-
-            const project = getCurrentProject();
-            project.expenditures.push({
-                id: Date.now(), date, description, category, amount,
-                paidAmount: status === 'partial' ? paidAmount : (status === 'paid' ? amount : 0),
-                status, createdAt: new Date().toISOString()
-            });
-            saveCurrentProject(project);
-            addActivity('Finance', `Added: ${description} (₦${amount.toLocaleString()})`, 'Recorded');
-
-            document.getElementById('qsDesc').value = '';
-            document.getElementById('qsAmount').value = '';
-            document.getElementById('qsPaidAmount').value = '';
-            document.getElementById('qsStatus').value = 'paid';
-            toggleQsPaid('paid');
-            closeQuickSheet();
-            showToast(`Added: ${description.substring(0, 30)} — ₦${amount.toLocaleString()}`);
-            refreshAll();
-        }
-    </script>
 </body>
 </html>
