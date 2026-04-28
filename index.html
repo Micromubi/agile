@@ -20,7 +20,7 @@
         .project-tabbar { background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; margin: 0 -24px; display: flex; align-items: stretch; gap: 0; overflow-x: auto; }
         .project-tab { padding: 14px 22px; border: none; background: none; font-size: 13px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
         .project-tab:hover { color: #374151; border-bottom-color: #d1d5db; }
-        .project-tab.active { color: #111827; border-bottom-color: #374151; }
+        .project-tab.active { color: #111827; border-bottom-color: #374151; background: rgba(55,65,81,0.07); border-radius: 4px 4px 0 0; }
         .project-tab-add { padding: 14px 16px; border: none; background: none; font-size: 18px; color: #9ca3af; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; transition: color 0.15s; }
         .project-tab-add:hover { color: #374151; }
         .project-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 8px 0; }
@@ -266,6 +266,83 @@
             /* Reports */
             .report-container { padding: 16px; font-size: 12px; }
         }
+        /* ── Add-task secondary button ── */
+        .btn-add-task { background: #fff; border: 1px solid #6b7280; color: #374151; }
+        .btn-add-task:hover { background: #f3f4f6; }
+
+        /* ── Theme toggle ── */
+        .theme-toggle { background: none; border: 1px solid #d1d5db; color: #374151; padding: 6px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; transition: background 0.15s; }
+        .theme-toggle:hover { background: #f3f4f6; }
+
+        /* ── Dark theme ── */
+        body.dark { background: #18181b; color: #f4f4f5; }
+        body.dark .header,
+        body.dark .project-tabbar,
+        body.dark .section-tabbar { background: #27272a; border-color: #3f3f46; }
+        body.dark .card,
+        body.dark .modal-content,
+        body.dark .quick-sheet { background: #27272a; border-color: #3f3f46; }
+        body.dark .budget-card,
+        body.dark .component-budget-card,
+        body.dark .progress-card,
+        body.dark .stat-card,
+        body.dark .payment-summary-item { background: #3f3f46; border-color: #52525b; }
+        body.dark .card-title,
+        body.dark .header-left h1,
+        body.dark .modal-content h3,
+        body.dark .quick-sheet h3,
+        body.dark .component-budget-card h5,
+        body.dark .progress-card h4,
+        body.dark .stat-number,
+        body.dark .payment-label,
+        body.dark .budget-card .amount { color: #f4f4f5; }
+        body.dark .budget-card h4,
+        body.dark .budget-card .sub,
+        body.dark .stat-label,
+        body.dark .sync-indicator,
+        body.dark .progress-card .budget-line,
+        body.dark .cbc-row span:first-child { color: #71717a; }
+        body.dark .cbc-row span:last-child { color: #f4f4f5; }
+        body.dark .project-tab,
+        body.dark .tab { color: #a1a1aa; }
+        body.dark .project-tab:hover,
+        body.dark .tab:hover { color: #e4e4e7; }
+        body.dark .project-tab.active { color: #f4f4f5; background: rgba(244,244,245,0.08); }
+        body.dark .tab.active { color: #f4f4f5; }
+        body.dark .project-tab-add { color: #52525b; }
+        body.dark .project-tab-add:hover { color: #d4d4d8; }
+        body.dark select,
+        body.dark input,
+        body.dark textarea,
+        body.dark .payment-input,
+        body.dark .qs-group input,
+        body.dark .qs-group select { background: #3f3f46; border-color: #52525b; color: #f4f4f5; }
+        body.dark .payment-input:disabled { background: #27272a; color: #52525b; }
+        body.dark .data-table th { background: #3f3f46; color: #d4d4d8; border-color: #52525b; }
+        body.dark .data-table td { color: #d4d4d8; border-color: #3f3f46; }
+        body.dark .data-table tr:hover td { background: #3f3f46; }
+        body.dark .btn-sm { background: #3f3f46; border-color: #52525b; color: #d4d4d8; }
+        body.dark .btn-sm:hover { background: #52525b; }
+        body.dark .btn-sm.danger { border-color: #7f1d1d; color: #fca5a5; }
+        body.dark .btn-add-task { background: #3f3f46; border-color: #71717a; color: #d4d4d8; }
+        body.dark .btn-add-task:hover { background: #52525b; }
+        body.dark .progress-bar-container,
+        body.dark .spend-bar-container { background: #3f3f46; }
+        body.dark .payment-row { border-color: #3f3f46; }
+        body.dark .payment-check { background: #3f3f46; border-color: #71717a; }
+        body.dark .payment-check:checked { background: #a1a1aa; border-color: #a1a1aa; }
+        body.dark .payment-status.pending { background: #3f3f46; color: #a1a1aa; }
+        body.dark .payment-summary { border-color: #3f3f46; }
+        body.dark .budget-total-display { background: #3f3f46; border-color: #52525b; color: #f4f4f5; }
+        body.dark .budget-inputs label,
+        body.dark .qs-group label { color: #a1a1aa; }
+        body.dark .quick-sheet-handle { background: #52525b; }
+        body.dark .qs-cancel { background: #3f3f46; color: #d4d4d8; }
+        body.dark .qs-cancel:hover { background: #52525b; }
+        body.dark .delete-btn { background: #27272a; }
+        body.dark .report-container { background: #27272a; border-color: #3f3f46; }
+        body.dark .theme-toggle { border-color: #52525b; color: #d4d4d8; }
+        body.dark .theme-toggle:hover { background: #3f3f46; }
     </style>
 </head>
 <body>
@@ -275,6 +352,7 @@
                 <h1>AGILE Project Management</h1>
                 <div class="sync-indicator" id="syncIndicator">Initialising...</div>
             </div>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☾ Dark</button>
         </div>
 
         <!-- Project Tabs -->
@@ -393,6 +471,7 @@
                 </div>
                 <div class="action-buttons">
                     <button onclick="markComplete('water')">Mark All Complete</button>
+                    <button class="btn-add-task" onclick="showAddTaskModal('water')">+ Add Task</button>
                 </div>
             </div>
         </div>
@@ -411,6 +490,7 @@
                 </div>
                 <div class="action-buttons">
                     <button onclick="markComplete('toilet')">Mark All Complete</button>
+                    <button class="btn-add-task" onclick="showAddTaskModal('toilet')">+ Add Task</button>
                 </div>
             </div>
         </div>
@@ -429,6 +509,7 @@
                 </div>
                 <div class="action-buttons">
                     <button onclick="markComplete('renovation')">Mark All Complete</button>
+                    <button class="btn-add-task" onclick="showAddTaskModal('renovation')">+ Add Task</button>
                 </div>
             </div>
         </div>
@@ -447,6 +528,7 @@
                 </div>
                 <div class="action-buttons">
                     <button onclick="markComplete('furniture')">Mark All Complete</button>
+                    <button class="btn-add-task" onclick="showAddTaskModal('furniture')">+ Add Task</button>
                 </div>
             </div>
         </div>
@@ -731,6 +813,7 @@
             if (!currentProjectId || !projects.find(p => p.id === currentProjectId)) {
                 currentProjectId = projects[0].id;
             }
+            applyTheme();
             updateProjectSelect();
             refreshAll();
             document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
@@ -1438,6 +1521,8 @@
             document.getElementById('qsBackdrop').classList.toggle('open', open);
             document.getElementById('fab').classList.toggle('open', open);
             if (open) {
+                const project = getCurrentProject();
+                document.getElementById('qsProjectName').textContent = project ? project.name : '';
                 document.getElementById('qsDate').value = new Date().toISOString().split('T')[0];
                 setTimeout(() => document.getElementById('qsDesc').focus(), 300);
             }
@@ -1470,15 +1555,80 @@
             closeQuickSheet();
         }
 
+        // ============ THEME ============
+        function toggleTheme() {
+            const dark = document.body.classList.toggle('dark');
+            localStorage.setItem('agile_theme', dark ? 'dark' : 'light');
+            document.getElementById('themeToggle').textContent = dark ? '☀ Light' : '☾ Dark';
+        }
+        function applyTheme() {
+            if (localStorage.getItem('agile_theme') === 'dark') {
+                document.body.classList.add('dark');
+                document.getElementById('themeToggle').textContent = '☀ Light';
+            }
+        }
+
+        // ============ ADD TASK ============
+        let _addTaskComponent = null;
+        function showAddTaskModal(component) {
+            _addTaskComponent = component;
+            const labels = { water: 'Water System', toilet: 'Toilet Facilities', renovation: 'Classroom Renovation', furniture: 'Furniture' };
+            document.getElementById('addTaskComponentLabel').textContent = labels[component] || component;
+            document.getElementById('newTaskName').value = '';
+            document.getElementById('newTaskQty').value = '1';
+            document.getElementById('newTaskQtyGroup').style.display = component === 'furniture' ? 'block' : 'none';
+            document.getElementById('addTaskModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('newTaskName').focus(), 100);
+        }
+        function submitAddTask() {
+            const name = document.getElementById('newTaskName').value.trim();
+            if (!name) { showToast('Please enter a task name', 'error'); return; }
+            const project = getCurrentProject();
+            const tasks = project.tasks[_addTaskComponent];
+            const maxId = tasks.reduce((m, t) => Math.max(m, t.id), 0);
+            const newTask = { id: maxId + 1, name, status: 'pending', completedDate: null };
+            if (_addTaskComponent === 'furniture') {
+                newTask.qty = parseInt(document.getElementById('newTaskQty').value) || 1;
+            } else {
+                newTask.notes = '';
+            }
+            tasks.push(newTask);
+            saveCurrentProject(project);
+            addActivity(_addTaskComponent, `Added task: ${name}`, 'Added');
+            closeModal('addTaskModal');
+            refreshAll();
+            showToast(`Task added: ${name}`);
+        }
+
         // ============ START ============
         initApp();
     </script>
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="modal">
+        <div class="modal-content">
+            <h3>Add Task — <span id="addTaskComponentLabel"></span></h3>
+            <div class="form-group" style="margin-bottom:15px">
+                <label style="display:block;margin-bottom:5px">Task Name</label>
+                <input type="text" id="newTaskName" placeholder="e.g., Install solar panels" style="width:100%;padding:10px"
+                    onkeydown="if(event.key==='Enter') submitAddTask()">
+            </div>
+            <div class="form-group" id="newTaskQtyGroup" style="display:none;margin-bottom:15px">
+                <label style="display:block;margin-bottom:5px">Quantity</label>
+                <input type="number" id="newTaskQty" placeholder="1" style="width:100%;padding:10px" min="1" value="1">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+                <button onclick="submitAddTask()">Add Task</button>
+                <button onclick="closeModal('addTaskModal')" style="background:#6b7280">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- FAB + Quick-add sheet -->
     <div class="quick-sheet-backdrop" id="qsBackdrop" onclick="closeQuickSheet()"></div>
     <div class="quick-sheet" id="quickSheet">
         <div class="quick-sheet-handle"></div>
-        <h3>Quick Add Expenditure</h3>
+        <h3>Quick Add — <span id="qsProjectName" style="color:#6b7280;font-weight:600"></span></h3>
         <div class="qs-row">
             <div class="qs-group" style="flex:0 0 150px"><label>Date</label><input type="date" id="qsDate"></div>
             <div class="qs-group"><label>Category</label>
