@@ -343,9 +343,106 @@
         body.dark .report-container { background: #27272a; border-color: #3f3f46; }
         body.dark .theme-toggle { border-color: #52525b; color: #d4d4d8; }
         body.dark .theme-toggle:hover { background: #3f3f46; }
+
+        /* ── Login Overlay ── */
+        #loginOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        #loginOverlay.hidden { display: none; }
+        .login-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(24px); border-radius: 20px; padding: 36px 28px 28px; width: 100%; max-width: 340px; color: #fff; text-align: center; }
+        .login-logo { font-size: 10px; font-weight: 800; letter-spacing: 5px; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+        .login-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .login-subtitle { font-size: 14px; color: rgba(255,255,255,0.55); margin-bottom: 2px; }
+        .login-subtitle-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-bottom: 24px; min-height: 16px; }
+        .user-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 20px 0 16px; }
+        .user-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; padding: 16px 18px; cursor: pointer; transition: all 0.2s; color: #fff; min-width: 90px; }
+        .user-btn:hover { background: rgba(255,255,255,0.16); transform: translateY(-2px); }
+        .user-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: #fff; }
+        .user-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85); }
+        .login-link { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 13px; cursor: pointer; padding: 8px; text-decoration: underline; }
+        .login-link:hover { color: rgba(255,255,255,0.75); background: none; }
+        .login-back { background: none; border: none; color: rgba(255,255,255,0.4); font-size: 13px; cursor: pointer; padding: 0 0 16px; display: block; text-align: left; }
+        .login-back:hover { color: #fff; background: none; }
+        .login-user-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; color: #fff; }
+        .pin-dots { display: flex; gap: 18px; justify-content: center; margin: 20px 0 6px; }
+        .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); transition: all 0.15s; }
+        .pin-dot.filled { background: #fff; border-color: #fff; transform: scale(1.1); }
+        .pin-error { height: 18px; color: #fca5a5; font-size: 12px; margin-bottom: 4px; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+        .pin-dots.shake { animation: shake 0.4s ease; }
+        .keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 14px 0 16px; }
+        .kp { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; color: #fff; font-size: 22px; font-weight: 600; padding: 15px 10px; cursor: pointer; transition: all 0.12s; }
+        .kp:hover { background: rgba(255,255,255,0.2); }
+        .kp:active { transform: scale(0.92); background: rgba(255,255,255,0.25); }
+        .kp-del { font-size: 18px; color: rgba(255,255,255,0.7); }
+        .kp-go { background: rgba(103,126,234,0.35); border-color: rgba(103,126,234,0.5); }
+        .kp-go:hover { background: rgba(103,126,234,0.55); }
+        .remember-label { display: flex; align-items: center; gap: 8px; justify-content: center; color: rgba(255,255,255,0.45); font-size: 12px; cursor: pointer; margin-top: 4px; }
+        .remember-label input { cursor: pointer; accent-color: #667eea; }
+        .login-input { width: 100%; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; background: rgba(255,255,255,0.08); color: #fff; font-size: 16px; text-align: center; margin: 16px 0 12px; letter-spacing: 1px; }
+        .login-input::placeholder { color: rgba(255,255,255,0.3); font-size: 13px; letter-spacing: 0; }
+        .login-input:focus { outline: none; border-color: rgba(103,126,234,0.8); }
+        .login-btn { width: 100%; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 10px; color: #fff; font-size: 15px; font-weight: 700; padding: 13px; cursor: pointer; transition: opacity 0.15s; }
+        .login-btn:hover { opacity: 0.88; }
+        .login-name-error { color: #fca5a5; font-size: 12px; margin-top: -6px; margin-bottom: 8px; min-height: 16px; }
     </style>
 </head>
 <body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay">
+        <div class="login-card">
+            <!-- Step 1: User selection -->
+            <div id="lsUsers">
+                <div class="login-logo">AGILE</div>
+                <div class="login-title">Welcome back</div>
+                <div class="login-subtitle" style="margin-bottom:0">Who are you?</div>
+                <div id="userGrid" class="user-grid"></div>
+                <button class="login-link" onclick="showCreateUser()">+ Add New User</button>
+            </div>
+
+            <!-- Step 2: PIN entry / setup -->
+            <div id="lsPin" style="display:none">
+                <button class="login-back" onclick="backToUsers()">← Back</button>
+                <div class="login-logo">AGILE</div>
+                <div class="login-user-avatar" id="loginAvatar"></div>
+                <div class="login-title" id="loginUserLabel"></div>
+                <div class="login-subtitle" id="loginPinPrompt">Enter your PIN</div>
+                <div class="login-subtitle-sub" id="loginPinSubtext"></div>
+                <div class="pin-dots" id="pinDots">
+                    <div class="pin-dot"></div><div class="pin-dot"></div>
+                    <div class="pin-dot"></div><div class="pin-dot"></div>
+                </div>
+                <div class="pin-error" id="pinError"></div>
+                <div class="keypad">
+                    <button class="kp" onclick="authKeyPress('1')">1</button>
+                    <button class="kp" onclick="authKeyPress('2')">2</button>
+                    <button class="kp" onclick="authKeyPress('3')">3</button>
+                    <button class="kp" onclick="authKeyPress('4')">4</button>
+                    <button class="kp" onclick="authKeyPress('5')">5</button>
+                    <button class="kp" onclick="authKeyPress('6')">6</button>
+                    <button class="kp" onclick="authKeyPress('7')">7</button>
+                    <button class="kp" onclick="authKeyPress('8')">8</button>
+                    <button class="kp" onclick="authKeyPress('9')">9</button>
+                    <button class="kp kp-del" onclick="authDelete()">⌫</button>
+                    <button class="kp" onclick="authKeyPress('0')">0</button>
+                    <button class="kp kp-go" onclick="authSubmit()">→</button>
+                </div>
+                <label class="remember-label">
+                    <input type="checkbox" id="rememberMe"> Remember this device
+                </label>
+            </div>
+
+            <!-- Step 3: Create new user -->
+            <div id="lsCreate" style="display:none">
+                <button class="login-back" onclick="backToUsers()">← Back</button>
+                <div class="login-logo">AGILE</div>
+                <div class="login-title">New User</div>
+                <div class="login-subtitle">Enter your name</div>
+                <input type="text" id="newUserNameInput" class="login-input" placeholder="e.g. Fatima, Sani..."
+                    onkeydown="if(event.key==='Enter') submitNewUserName()">
+                <div class="login-name-error" id="newUserNameError"></div>
+                <button class="login-btn" onclick="submitNewUserName()">Continue →</button>
+            </div>
+        </div>
+    </div>
     <div class="container">
         <div class="header">
             <div class="header-left">
@@ -818,6 +915,7 @@
             refreshAll();
             document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
             setupBudgetListeners();
+            initAuthOverlay();
         }
 
         // Ensure older projects get a budget + payments field
@@ -1554,6 +1652,214 @@
             toggleQsPaid('paid');
             closeQuickSheet();
         }
+
+        // ============ AUTH ============
+        const AUTH_USERS_KEY = 'agile_auth_users';
+        const AUTH_SESSION_KEY = 'agile_auth_session';
+        let authUsers = [];
+        let authCurrentUser = null;
+        let authPinBuffer = '';
+        let authMode = ''; // 'enter'|'setup1'|'setup2'|'create-pin1'|'create-pin2'
+        let authSetupPin1 = '';
+        let authNewUserName = '';
+
+        function initAuthOverlay() {
+            const stored = localStorage.getItem(AUTH_USERS_KEY);
+            if (stored) {
+                authUsers = JSON.parse(stored);
+                ensureDefaultUsers();
+            } else {
+                authUsers = [
+                    { id: 'mubarak', name: 'Mubarak', pin: '3786', isAdmin: true },
+                    { id: 'ak', name: 'AK', pin: null }
+                ];
+                saveAuthUsers();
+            }
+            const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
+            if (session) {
+                const user = authUsers.find(u => u.id === session.userId && u.pin);
+                if (user) { authCurrentUser = user; renderLoggedInHeader(); hideLoginOverlay(); return; }
+            }
+            showUserSelection();
+        }
+
+        function ensureDefaultUsers() {
+            let changed = false;
+            let m = authUsers.find(u => u.id === 'mubarak');
+            if (!m) { authUsers.unshift({ id: 'mubarak', name: 'Mubarak', pin: '3786', isAdmin: true }); changed = true; }
+            else if (!m.pin) { m.pin = '3786'; changed = true; }
+            if (!authUsers.find(u => u.id === 'ak')) { authUsers.push({ id: 'ak', name: 'AK', pin: null }); changed = true; }
+            if (changed) saveAuthUsers();
+        }
+
+        function saveAuthUsers() { localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(authUsers)); }
+
+        function showLoginStep(stepId) {
+            ['lsUsers','lsPin','lsCreate'].forEach(id => {
+                document.getElementById(id).style.display = id === stepId ? 'block' : 'none';
+            });
+        }
+
+        function showUserSelection() {
+            document.getElementById('userGrid').innerHTML = authUsers.map(u => `
+                <button class="user-btn" onclick="selectUser('${u.id}')">
+                    <div class="user-avatar">${u.name.charAt(0).toUpperCase()}</div>
+                    <div class="user-name">${u.name}</div>
+                </button>
+            `).join('');
+            showLoginStep('lsUsers');
+        }
+
+        function selectUser(userId) {
+            authCurrentUser = authUsers.find(u => u.id === userId);
+            authPinBuffer = '';
+            document.getElementById('loginAvatar').textContent = authCurrentUser.name.charAt(0).toUpperCase();
+            document.getElementById('loginUserLabel').textContent = authCurrentUser.name;
+            if (!authCurrentUser.pin) {
+                authMode = 'setup1';
+                document.getElementById('loginPinPrompt').textContent = 'Create your PIN';
+                document.getElementById('loginPinSubtext').textContent = 'Choose a 4-digit PIN';
+            } else {
+                authMode = 'enter';
+                document.getElementById('loginPinPrompt').textContent = 'Enter your PIN';
+                document.getElementById('loginPinSubtext').textContent = '';
+            }
+            document.getElementById('pinError').textContent = '';
+            updatePinDots();
+            showLoginStep('lsPin');
+        }
+
+        function authKeyPress(digit) {
+            if (authPinBuffer.length >= 4) return;
+            authPinBuffer += digit;
+            updatePinDots();
+            if (authPinBuffer.length === 4) setTimeout(processPin, 180);
+        }
+        function authDelete() { authPinBuffer = authPinBuffer.slice(0,-1); updatePinDots(); }
+        function authSubmit() { if (authPinBuffer.length === 4) processPin(); }
+
+        function updatePinDots() {
+            document.getElementById('pinDots').innerHTML =
+                [0,1,2,3].map(i => `<div class="pin-dot ${i < authPinBuffer.length ? 'filled' : ''}"></div>`).join('');
+        }
+
+        function processPin() {
+            if (authMode === 'enter') {
+                if (authPinBuffer === authCurrentUser.pin) {
+                    if (document.getElementById('rememberMe').checked)
+                        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ userId: authCurrentUser.id }));
+                    renderLoggedInHeader();
+                    hideLoginOverlay();
+                } else {
+                    showPinError('Incorrect PIN');
+                    authPinBuffer = ''; updatePinDots();
+                }
+            } else if (authMode === 'setup1') {
+                authSetupPin1 = authPinBuffer; authPinBuffer = ''; authMode = 'setup2';
+                document.getElementById('loginPinPrompt').textContent = 'Confirm your PIN';
+                document.getElementById('loginPinSubtext').textContent = 'Enter the same PIN again';
+                updatePinDots();
+            } else if (authMode === 'setup2') {
+                if (authPinBuffer === authSetupPin1) {
+                    authCurrentUser.pin = authPinBuffer; saveAuthUsers();
+                    if (document.getElementById('rememberMe').checked)
+                        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ userId: authCurrentUser.id }));
+                    renderLoggedInHeader(); hideLoginOverlay();
+                } else {
+                    showPinError('PINs do not match — try again');
+                    authPinBuffer = ''; authSetupPin1 = ''; authMode = 'setup1';
+                    document.getElementById('loginPinPrompt').textContent = 'Create your PIN';
+                    document.getElementById('loginPinSubtext').textContent = 'Choose a 4-digit PIN';
+                    updatePinDots();
+                }
+            } else if (authMode === 'create-pin1') {
+                authSetupPin1 = authPinBuffer; authPinBuffer = ''; authMode = 'create-pin2';
+                document.getElementById('loginPinPrompt').textContent = 'Confirm your PIN';
+                document.getElementById('loginPinSubtext').textContent = 'Enter the same PIN again';
+                updatePinDots();
+            } else if (authMode === 'create-pin2') {
+                if (authPinBuffer === authSetupPin1) {
+                    const nu = { id: 'user_' + Date.now(), name: authNewUserName, pin: authPinBuffer };
+                    authUsers.push(nu); saveAuthUsers(); authCurrentUser = nu;
+                    if (document.getElementById('rememberMe').checked)
+                        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ userId: nu.id }));
+                    renderLoggedInHeader(); hideLoginOverlay();
+                } else {
+                    showPinError('PINs do not match — try again');
+                    authPinBuffer = ''; authSetupPin1 = ''; authMode = 'create-pin1';
+                    document.getElementById('loginPinPrompt').textContent = 'Create your PIN';
+                    document.getElementById('loginPinSubtext').textContent = 'Choose a 4-digit PIN';
+                    updatePinDots();
+                }
+            }
+        }
+
+        function showPinError(msg) {
+            const el = document.getElementById('pinError');
+            el.textContent = msg;
+            const dots = document.getElementById('pinDots');
+            dots.classList.add('shake');
+            setTimeout(() => { el.textContent = ''; dots.classList.remove('shake'); }, 1600);
+        }
+
+        function backToUsers() { authPinBuffer = ''; showUserSelection(); }
+
+        function showCreateUser() {
+            document.getElementById('newUserNameInput').value = '';
+            document.getElementById('newUserNameError').textContent = '';
+            showLoginStep('lsCreate');
+            setTimeout(() => document.getElementById('newUserNameInput').focus(), 100);
+        }
+
+        function submitNewUserName() {
+            const raw = document.getElementById('newUserNameInput').value.trim();
+            if (!raw) { document.getElementById('newUserNameError').textContent = 'Please enter a name'; return; }
+            if (authUsers.find(u => u.name.toLowerCase() === raw.toLowerCase())) {
+                document.getElementById('newUserNameError').textContent = 'That name is already taken';
+                return;
+            }
+            authNewUserName = raw.charAt(0).toUpperCase() + raw.slice(1);
+            authPinBuffer = ''; authMode = 'create-pin1';
+            document.getElementById('loginAvatar').textContent = authNewUserName.charAt(0).toUpperCase();
+            document.getElementById('loginUserLabel').textContent = authNewUserName;
+            document.getElementById('loginPinPrompt').textContent = 'Create your PIN';
+            document.getElementById('loginPinSubtext').textContent = 'Choose a 4-digit PIN';
+            document.getElementById('pinError').textContent = '';
+            updatePinDots();
+            showLoginStep('lsPin');
+        }
+
+        function renderLoggedInHeader() {
+            const existing = document.getElementById('logoutBtn');
+            if (existing) { existing.textContent = authCurrentUser.name; return; }
+            const btn = document.createElement('button');
+            btn.id = 'logoutBtn';
+            btn.className = 'theme-toggle';
+            btn.style.cssText = 'margin-right:8px;font-weight:600';
+            btn.textContent = authCurrentUser.name;
+            btn.onclick = logout;
+            document.getElementById('themeToggle').before(btn);
+        }
+
+        function logout() {
+            localStorage.removeItem(AUTH_SESSION_KEY);
+            authCurrentUser = null; authPinBuffer = '';
+            const btn = document.getElementById('logoutBtn');
+            if (btn) btn.remove();
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            showUserSelection();
+        }
+
+        function hideLoginOverlay() { document.getElementById('loginOverlay').classList.add('hidden'); }
+
+        // Keyboard support for PIN screen
+        document.addEventListener('keydown', e => {
+            if (document.getElementById('loginOverlay').classList.contains('hidden')) return;
+            if (document.getElementById('lsPin').style.display === 'none') return;
+            if (/^[0-9]$/.test(e.key)) authKeyPress(e.key);
+            else if (e.key === 'Backspace') authDelete();
+            else if (e.key === 'Enter') authSubmit();
+        });
 
         // ============ THEME ============
         function toggleTheme() {
