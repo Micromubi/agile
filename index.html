@@ -438,7 +438,7 @@
                     <button class="kp kp-go" onclick="authSubmit()">→</button>
                 </div>
                 <label class="remember-label">
-                    <input type="checkbox" id="rememberMe"> Remember this device
+                    <input type="checkbox" id="rememberMe" checked> Remember this device
                 </label>
             </div>
 
@@ -884,6 +884,7 @@
 
         // ============ INIT ============
         async function initApp() {
+            initAuthOverlay(); // localStorage only — runs instantly before any await
             setSync('Connecting to cloud...');
             try {
                 const dbProjects = await loadFromDB();
@@ -916,7 +917,6 @@
             refreshAll();
             document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
             setupBudgetListeners();
-            initAuthOverlay();
         }
 
         // Ensure older projects get a budget + payments field
