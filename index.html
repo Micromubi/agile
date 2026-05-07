@@ -395,7 +395,19 @@
                 <div class="login-title">Welcome back</div>
                 <div class="login-subtitle" style="margin-bottom:0">Who are you?</div>
                 <div id="userGrid" class="user-grid"></div>
-                <button class="login-link" onclick="showCreateUser()">+ Add New User</button>
+            </div>
+
+            <!-- Step 1b: Name verification (for users without PIN set) -->
+            <div id="lsVerify" style="display:none">
+                <button class="login-back" onclick="backToUsers()">← Back</button>
+                <div class="login-logo">AGILE</div>
+                <div class="login-user-avatar" id="verifyAvatar"></div>
+                <div class="login-title">Verify your identity</div>
+                <div class="login-subtitle">Type your name to continue</div>
+                <input type="text" id="verifyNameInput" class="login-input" placeholder="Enter your name..."
+                    onkeydown="if(event.key==='Enter') submitVerifyName()">
+                <div class="login-name-error" id="verifyNameError"></div>
+                <button class="login-btn" onclick="submitVerifyName()">Continue →</button>
             </div>
 
             <!-- Step 2: PIN entry / setup -->
@@ -430,17 +442,6 @@
                 </label>
             </div>
 
-            <!-- Step 3: Create new user -->
-            <div id="lsCreate" style="display:none">
-                <button class="login-back" onclick="backToUsers()">← Back</button>
-                <div class="login-logo">AGILE</div>
-                <div class="login-title">New User</div>
-                <div class="login-subtitle">Enter your name</div>
-                <input type="text" id="newUserNameInput" class="login-input" placeholder="e.g. Fatima, Sani..."
-                    onkeydown="if(event.key==='Enter') submitNewUserName()">
-                <div class="login-name-error" id="newUserNameError"></div>
-                <button class="login-btn" onclick="submitNewUserName()">Continue →</button>
-            </div>
         </div>
     </div>
     <div class="container">
@@ -1695,7 +1696,7 @@
         function saveAuthUsers() { localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(authUsers)); }
 
         function showLoginStep(stepId) {
-            ['lsUsers','lsPin','lsCreate'].forEach(id => {
+            ['lsUsers','lsVerify','lsPin'].forEach(id => {
                 document.getElementById(id).style.display = id === stepId ? 'block' : 'none';
             });
         }
@@ -1713,14 +1714,38 @@
         function selectUser(userId) {
             authCurrentUser = authUsers.find(u => u.id === userId);
             authPinBuffer = '';
+            if (!authCurrentUser.pin) {
+                // Must verify name before setting PIN
+                document.getElementById('verifyAvatar').textContent = authCurrentUser.name.charAt(0).toUpperCase();
+                document.getElementById('verifyNameInput').value = '';
+                document.getElementById('verifyNameError').textContent = '';
+                showLoginStep('lsVerify');
+                setTimeout(() => document.getElementById('verifyNameInput').focus(), 100);
+            } else {
+                showPinStep('enter');
+            }
+        }
+
+        function submitVerifyName() {
+            const input = document.getElementById('verifyNameInput').value.trim();
+            if (input.toLowerCase() !== authCurrentUser.name.toLowerCase()) {
+                document.getElementById('verifyNameError').textContent = 'Name does not match. Access denied.';
+                document.getElementById('verifyNameInput').value = '';
+                setTimeout(() => document.getElementById('verifyNameError').textContent = '', 2500);
+                return;
+            }
+            showPinStep('setup1');
+        }
+
+        function showPinStep(mode) {
+            authMode = mode;
+            authPinBuffer = '';
             document.getElementById('loginAvatar').textContent = authCurrentUser.name.charAt(0).toUpperCase();
             document.getElementById('loginUserLabel').textContent = authCurrentUser.name;
-            if (!authCurrentUser.pin) {
-                authMode = 'setup1';
+            if (mode === 'setup1') {
                 document.getElementById('loginPinPrompt').textContent = 'Create your PIN';
                 document.getElementById('loginPinSubtext').textContent = 'Choose a 4-digit PIN';
             } else {
-                authMode = 'enter';
                 document.getElementById('loginPinPrompt').textContent = 'Enter your PIN';
                 document.getElementById('loginPinSubtext').textContent = '';
             }
@@ -1804,50 +1829,108 @@
 
         function backToUsers() { authPinBuffer = ''; showUserSelection(); }
 
-        function showCreateUser() {
-            document.getElementById('newUserNameInput').value = '';
-            document.getElementById('newUserNameError').textContent = '';
-            showLoginStep('lsCreate');
-            setTimeout(() => document.getElementById('newUserNameInput').focus(), 100);
-        }
-
-        function submitNewUserName() {
-            const raw = document.getElementById('newUserNameInput').value.trim();
-            if (!raw) { document.getElementById('newUserNameError').textContent = 'Please enter a name'; return; }
-            if (authUsers.find(u => u.name.toLowerCase() === raw.toLowerCase())) {
-                document.getElementById('newUserNameError').textContent = 'That name is already taken';
-                return;
-            }
-            authNewUserName = raw.charAt(0).toUpperCase() + raw.slice(1);
-            authPinBuffer = ''; authMode = 'create-pin1';
-            document.getElementById('loginAvatar').textContent = authNewUserName.charAt(0).toUpperCase();
-            document.getElementById('loginUserLabel').textContent = authNewUserName;
-            document.getElementById('loginPinPrompt').textContent = 'Create your PIN';
-            document.getElementById('loginPinSubtext').textContent = 'Choose a 4-digit PIN';
-            document.getElementById('pinError').textContent = '';
-            updatePinDots();
-            showLoginStep('lsPin');
-        }
-
         function renderLoggedInHeader() {
-            const existing = document.getElementById('logoutBtn');
-            if (existing) { existing.textContent = authCurrentUser.name; return; }
-            const btn = document.createElement('button');
-            btn.id = 'logoutBtn';
-            btn.className = 'theme-toggle';
-            btn.style.cssText = 'margin-right:8px;font-weight:600';
-            btn.textContent = authCurrentUser.name;
-            btn.onclick = logout;
-            document.getElementById('themeToggle').before(btn);
+            // Remove old buttons if re-rendering
+            ['logoutBtn','addUserBtn','userNameDisplay'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.remove();
+            });
+            const themeBtn = document.getElementById('themeToggle');
+
+            const nameSpan = document.createElement('span');
+            nameSpan.id = 'userNameDisplay';
+            nameSpan.style.cssText = 'font-size:13px;font-weight:700;color:#374151;margin-right:4px;padding:6px 10px;background:#f3f4f6;border-radius:5px;border:1px solid #e5e7eb;display:inline-flex;align-items:center;gap:5px';
+            nameSpan.innerHTML = `<span style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800">${authCurrentUser.name.charAt(0).toUpperCase()}</span> ${authCurrentUser.name}`;
+            themeBtn.before(nameSpan);
+
+            const addBtn = document.createElement('button');
+            addBtn.id = 'addUserBtn';
+            addBtn.className = 'theme-toggle';
+            addBtn.style.cssText = 'margin-right:6px';
+            addBtn.textContent = '+ User';
+            addBtn.onclick = showAddUserModal;
+            themeBtn.before(addBtn);
+
+            const logoutBtn = document.createElement('button');
+            logoutBtn.id = 'logoutBtn';
+            logoutBtn.className = 'theme-toggle';
+            logoutBtn.style.cssText = 'margin-right:6px;color:#dc2626;border-color:#fca5a5';
+            logoutBtn.textContent = 'Sign Out';
+            logoutBtn.onclick = logout;
+            themeBtn.before(logoutBtn);
         }
 
         function logout() {
             localStorage.removeItem(AUTH_SESSION_KEY);
             authCurrentUser = null; authPinBuffer = '';
-            const btn = document.getElementById('logoutBtn');
-            if (btn) btn.remove();
+            ['logoutBtn','addUserBtn','userNameDisplay'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.remove();
+            });
             document.getElementById('loginOverlay').classList.remove('hidden');
             showUserSelection();
+        }
+
+        // ── In-app Add User ──
+        let auPinBuffer = '', auPinFirst = '', auPinMode = 'first', auPendingName = '';
+
+        function showAddUserModal() {
+            auPinBuffer = ''; auPinFirst = ''; auPinMode = 'first'; auPendingName = '';
+            document.getElementById('addUserNameInput').value = '';
+            document.getElementById('addUserNameError').textContent = '';
+            document.getElementById('addUserStep1').style.display = 'block';
+            document.getElementById('addUserStep2').style.display = 'none';
+            document.getElementById('addUserModalTitle').textContent = 'Add New User';
+            document.getElementById('addUserModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('addUserNameInput').focus(), 100);
+        }
+
+        function submitAddUserName() {
+            const raw = document.getElementById('addUserNameInput').value.trim();
+            if (!raw) { document.getElementById('addUserNameError').textContent = 'Please enter a name'; return; }
+            if (authUsers.find(u => u.name.toLowerCase() === raw.toLowerCase())) {
+                document.getElementById('addUserNameError').textContent = 'That name already exists'; return;
+            }
+            auPendingName = raw.charAt(0).toUpperCase() + raw.slice(1);
+            auPinBuffer = ''; auPinFirst = ''; auPinMode = 'first';
+            document.getElementById('addUserNameDisplay').textContent = auPendingName;
+            document.getElementById('addUserPinHint').textContent = 'Enter a 4-digit PIN';
+            document.getElementById('addUserPinError').textContent = '';
+            document.getElementById('addUserStep1').style.display = 'none';
+            document.getElementById('addUserStep2').style.display = 'block';
+            updateAuDots();
+        }
+
+        function auKeyPress(d) {
+            if (auPinBuffer.length >= 4) return;
+            auPinBuffer += d; updateAuDots();
+            if (auPinBuffer.length === 4) setTimeout(processAuPin, 180);
+        }
+        function auDelete() { auPinBuffer = auPinBuffer.slice(0,-1); updateAuDots(); }
+        function updateAuDots() {
+            [0,1,2,3].forEach(i => {
+                const dot = document.getElementById('auDot' + i);
+                dot.style.background = i < auPinBuffer.length ? '#1f2937' : '';
+                dot.style.borderColor = i < auPinBuffer.length ? '#1f2937' : '#9ca3af';
+            });
+        }
+        function processAuPin() {
+            if (auPinMode === 'first') {
+                auPinFirst = auPinBuffer; auPinBuffer = ''; auPinMode = 'confirm';
+                document.getElementById('addUserPinHint').textContent = 'Confirm your PIN';
+                updateAuDots();
+            } else {
+                if (auPinBuffer === auPinFirst) {
+                    const nu = { id: 'user_' + Date.now(), name: auPendingName, pin: auPinBuffer };
+                    authUsers.push(nu); saveAuthUsers();
+                    closeModal('addUserModal');
+                    showToast(`User "${auPendingName}" added`);
+                } else {
+                    document.getElementById('addUserPinError').textContent = 'PINs do not match — try again';
+                    auPinBuffer = ''; auPinFirst = ''; auPinMode = 'first';
+                    document.getElementById('addUserPinHint').textContent = 'Enter a 4-digit PIN';
+                    updateAuDots();
+                    setTimeout(() => document.getElementById('addUserPinError').textContent = '', 2000);
+                }
+            }
         }
 
         function hideLoginOverlay() { document.getElementById('loginOverlay').classList.add('hidden'); }
@@ -1909,6 +1992,50 @@
         // ============ START ============
         initApp();
     </script>
+
+    <!-- Add User Modal (inside app) -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <h3 id="addUserModalTitle">Add New User</h3>
+            <div id="addUserStep1">
+                <div class="form-group" style="margin-bottom:14px">
+                    <label style="display:block;margin-bottom:5px">Full Name</label>
+                    <input type="text" id="addUserNameInput" placeholder="e.g. Fatima, Aliyu..." style="width:100%;padding:10px"
+                        onkeydown="if(event.key==='Enter') submitAddUserName()">
+                    <div style="color:#dc2626;font-size:12px;margin-top:4px;min-height:16px" id="addUserNameError"></div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end">
+                    <button onclick="submitAddUserName()">Next →</button>
+                    <button onclick="closeModal('addUserModal')" style="background:#6b7280">Cancel</button>
+                </div>
+            </div>
+            <div id="addUserStep2" style="display:none">
+                <p style="font-size:13px;color:#6b7280;margin-bottom:14px">Setting PIN for: <strong id="addUserNameDisplay"></strong></p>
+                <div style="display:flex;gap:14px;justify-content:center;margin:14px 0">
+                    <div style="width:14px;height:14px;border-radius:50%;border:2px solid #9ca3af" id="auDot0"></div>
+                    <div style="width:14px;height:14px;border-radius:50%;border:2px solid #9ca3af" id="auDot1"></div>
+                    <div style="width:14px;height:14px;border-radius:50%;border:2px solid #9ca3af" id="auDot2"></div>
+                    <div style="width:14px;height:14px;border-radius:50%;border:2px solid #9ca3af" id="auDot3"></div>
+                </div>
+                <div style="color:#dc2626;font-size:12px;margin-bottom:8px;min-height:16px;text-align:center" id="addUserPinError"></div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto 14px">
+                    <button onclick="auKeyPress('1')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">1</button>
+                    <button onclick="auKeyPress('2')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">2</button>
+                    <button onclick="auKeyPress('3')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">3</button>
+                    <button onclick="auKeyPress('4')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">4</button>
+                    <button onclick="auKeyPress('5')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">5</button>
+                    <button onclick="auKeyPress('6')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">6</button>
+                    <button onclick="auKeyPress('7')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">7</button>
+                    <button onclick="auKeyPress('8')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">8</button>
+                    <button onclick="auKeyPress('9')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">9</button>
+                    <button onclick="auDelete()" style="border-radius:8px;font-size:16px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#374151">⌫</button>
+                    <button onclick="auKeyPress('0')" style="border-radius:8px;font-size:18px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#111827">0</button>
+                    <button onclick="closeModal('addUserModal')" style="border-radius:8px;font-size:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;color:#6b7280">✕</button>
+                </div>
+                <p style="font-size:11px;color:#9ca3af;text-align:center" id="addUserPinHint">Enter a 4-digit PIN</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Add Task Modal -->
     <div id="addTaskModal" class="modal">
